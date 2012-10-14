@@ -12,6 +12,12 @@ mwGraphr.randomColor = function () {
 };
 
 mwGraphr.init = function () {
+    Array.prototype.mwRemove = function (elem) {
+        var i = this.indexOf(elem);
+        if (i >= 0) {
+            this.splice(i, 1);
+        }
+    };
     $("#add-button").click(mwGraphr.addNode);
 };
 
@@ -22,10 +28,6 @@ mwGraphr.addNode = function () {
     node = document.createElement("div");
     node.setAttribute("class", "graph-node");
     
-    background = document.createElement("div");
-    background.setAttribute("class", "graph-node-background");
-    node.appendChild(background);
-
     title = document.createElement("div");
     title.setAttribute("class", "graph-node-title");
     title.textContent = "title";
@@ -37,15 +39,43 @@ mwGraphr.addNode = function () {
         li = document.createElement("li");
         li.textContent = "input " + i;
 
-        $(li).droppable({
-            drop: function (event, ui) {
-                var edge = ui.helper.data("mwEdge");
-                ui.helper.data("mwEdge", null);
-                $(this).data("mwEdge", edge);
-                edge.setEnd(this);
-            },
-            accept: ".graph-node-outputs li"
-        });
+        $(li)
+            .data("mwEdgeInput", null)
+            .droppable({
+                drop: function (event, ui) {
+                    var edge = ui.helper.data("mwEdgeInput");
+                    if (edge) {
+                        edge.setEnd(this);
+                    }
+                },
+                accept: ".graph-node-outputs li, .graph-node-inputs li"
+            })
+            .draggable({
+                helper: function () {
+                    var helper = document.createElement("div");
+                    var edge = $(this).data("mwEdgeInput");
+                    if (edge === null) {
+                        helper.setAttribute("class", "graph-no-dot");
+                    } else {
+                        helper.setAttribute("class", "graph-node-dot");
+                        edge.setEnd(helper);
+                    }
+                    return helper;
+                },
+                cursorAt: {left: 6, top: 6},
+                drag: function (event, ui) {
+                    var edge = ui.helper.data("mwEdgeInput");
+                    if (edge) {
+                        edge.update();
+                    }
+                },
+                stop: function (event, ui) {
+                    var edge = ui.helper.data("mwEdgeInput");
+                    if (edge) {
+                        edge.remove();
+                    }
+                }
+            });
 
         inputs.appendChild(li);
     }
@@ -56,26 +86,23 @@ mwGraphr.addNode = function () {
     for (i = 0; i < 2; i++) {
         li = document.createElement("li");
         li.textContent = "output " + i;
+        $(li).data("mwEdgeOutputs", []);
 
         $(li).draggable({
             helper: function () {
                 var helper = document.createElement("div");
-                helper.setAttribute("class", "graph-node-output-dot");
-
+                helper.setAttribute("class", "graph-node-dot");
                 var edge = mwGraphr.graphEdge({start: this, end: helper});
-                $(helper).data("mwEdge", edge);
-                $(this).data("mwEdge", edge);
-
                 return helper;
             },
             cursorAt: {left: 6, top: 6},
             drag: function (event, ui) {
-                ui.helper.data("mwEdge").update();
+                ui.helper.data("mwEdgeInput").update();
             },
             stop: function (event, ui) {
-                var edge = ui.helper.data("mwEdge");
-                if (edge !== null) {
-                    edge.parentNode.removeChild(edge);
+                var edge = ui.helper.data("mwEdgeInput");
+                if (edge) {
+                    edge.remove();
                 }
             }
         });
@@ -90,14 +117,23 @@ mwGraphr.addNode = function () {
         stack: ".graph-node",
         drag: function (event, ui) {
             $(this)
-                .find(".graph-node-inputs li,.graph-node-outputs li")
+                .find(".graph-node-inputs li")
                 .each(function (i) {
-                    var edge = $(this).data("mwEdge");
-                    if (edge !== undefined) {
+                    var edge = $(this).data("mwEdgeInput");
+                    if (edge) {
                         edge.update();
                     }
                 });
-        }
+            $(this)
+                .find(".graph-node-outputs li")
+                .each(function (i) {
+                    var edges = $(this).data("mwEdgeOutputs");
+                    for (var j = 0; j < edges.length; j++) {
+                        edges[j].update();
+                    }
+                });
+        },
+        scroll: true
     });
 
     $("#graph").append(node);
@@ -113,6 +149,8 @@ mwGraphr.graphEdge = function (spec) {
 
     var start = spec.start;
     var end = spec.end;
+    $(start).data("mwEdgeOutputs").push(that);
+    $(end).data("mwEdgeInput", that);
 
     var update = function () {
         var origin = $("#graph-svg").offset();
@@ -132,13 +170,28 @@ mwGraphr.graphEdge = function (spec) {
     };
     that.update = update;
 
+    var remove = function () {
+        $(start).data("mwEdgeOutputs").mwRemove(that);
+        $(end).data("mwEdgeInput", null);
+        that.parentNode.removeChild(that);
+    };
+    that.remove = remove;
+
     var setStart = function (x) {
+        $(start).data("mwEdgeOutputs").mwRemove(that);
+        $(x).data("mwEdgeOutputs").push(that);
         start = x;
         that.update();
     };
     that.setStart = setStart;
 
     var setEnd = function (x) {
+        $(end).data("mwEdgeInput", null);
+        var oldEdge = $(x).data("mwEdgeInput");
+        if (oldEdge) {
+            oldEdge.remove();
+        }
+        $(x).data("mwEdgeInput", that);
         end = x;
         that.update();
     };
