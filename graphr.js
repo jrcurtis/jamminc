@@ -18,38 +18,230 @@ mwGraphr.init = function () {
             this.splice(i, 1);
         }
     };
-    $("#add-button").click(mwGraphr.addNode);
+
+    Array.prototype.mwRemovePred = function (pred) {
+        var i;
+        for (i = this.length - 1; i >= 0; i--) {
+            if (pred(this[i])) {
+                this.splice(i, 1);
+            }
+        }
+    };
 };
 
-mwGraphr.addNode = function () {
-    var node, title, background, inputs, outputs;
-    var li, i;
+// Arguments:
+//     spec.placement: the DOM element to place the graph in
+mwGraphr.graph = function (spec) {
+    var makeNodeSelection = function () {
+        selectionElement = document.createElement("ul");
+        selectionElement.setAttribute("class", "graph-node-selection");
+        $(element).after(selectionElement);
+    };
 
-    node = document.createElement("div");
-    node.setAttribute("class", "graph-node");
+    var addSelectionElements = function () {
+        var makeHelper = function (type) {
+            return function () {
+                var tempNode = mwGraphr.graphNode({type: type});
+                var helperElement = tempNode.getElement();
+                $(helperElement).data("mwNodeType", type);
+                return helperElement;
+            };
+        };
+
+        $(selectionElement).children().detach();
+        nodeTypes.sort(function (a, b) {
+            if (a.name < b.name) { return -1; }
+            else if (a.name > b.name) { return 1; }
+            else { return 0; }
+        });
+
+        var i, li;
+        for (i = 0; i < nodeTypes.length; i++) {
+            li = document.createElement("li");
+            li.textContent = nodeTypes[i].name;
+            selectionElement.appendChild(li);
+
+            $(li)
+                .draggable({
+                    helper: makeHelper(nodeTypes[i]),
+                });
+        };
+    };
+
+    var makeGraph = function () {
+        table = document.createElement("table");
+        table.setAttribute("class", "graph-table");
+        var row = document.createElement("tr");
+        table.appendChild(row);
+        var leftCell = document.createElement("td");
+        row.appendChild(leftCell);
+        var rightCell = document.createElement("td");
+        row.appendChild(rightCell);
+        
+        element = document.createElement("div");
+        element.setAttribute("class", "graph");
+        leftCell.appendChild(element);
+
+        $(element)
+            .droppable({
+                accept: ".graph-node-selection li",
+                drop: function (event, ui) {
+                    that.addNode(
+                        ui.helper.data("mwNodeType"),
+                        $(ui.helper).offset());
+                }
+            });
+
+        svg = document.createElementNS(mwGraphr.SVG_NS, "svg");
+        svg.setAttribute("class", "graph-svg");
+        element.appendChild(svg);
+        var x, y, path;
+        for (x = 0; x < width; x += 30) {
+            path = document.createElementNS(mwGraphr.SVG_NS, "path");
+            path.setAttribute("d", ["M", x, 0, "l", 0, height].join(" "));
+            path.style.stroke = "#8AF";
+            path.style.stroke_width = "1px";
+            svg.appendChild(path);
+        }
+        for (y = 0; y < height; y += 30) {
+            path = document.createElementNS(mwGraphr.SVG_NS, "path");
+            path.setAttribute("d", ["M", 0, y, "l", width, 0].join(" "));
+            path.style.stroke = "#8AF";
+            path.style.stroke_width = "1px";
+            svg.appendChild(path);
+        }
+
+        makeNodeSelection();
+        rightCell.appendChild(selectionElement);
+
+        $(spec.placement || document.body).append(table);
+    };
     
-    title = document.createElement("div");
-    title.setAttribute("class", "graph-node-title");
-    title.textContent = "title";
-    node.appendChild(title);
+    spec = spec || {};
 
-    inputs = document.createElement("ul");
-    inputs.setAttribute("class", "graph-node-inputs");
-    for (i = 0; i < 3; i++) {
-        li = document.createElement("li");
-        li.textContent = "input " + i;
+    if (mwGraphr.graph.count) {
+        mwGraphr.graph.count++;
+    } else {
+        mwGraphr.graph.count = 1;
+    }
+
+    var that = {};
+    that.id = mwGraphr.graph.count;
+
+    var width = 800;
+    var height = 600;
+
+    var table, element, svg, selectionElement;
+    makeGraph();
+
+    var nodeTypes = [];
+    var nodes = [];
+    var terminalNodeType = null;
+    var terminalNode = null;
+
+    var addNodeTypes = function () {
+        for (var i = 0; i < arguments.length; i++) {
+            arguments[i].inputs = arguments[i].inputs || [];
+            arguments[i].outputs = arguments[i].outputs || [];
+
+            if (arguments[i].terminal) {
+                terminalNodeType = arguments[i];
+                terminalNode = addNode(terminalNodeType);
+            } else {
+                nodeTypes.push(arguments[i]);
+            }
+        }
+        addSelectionElements();
+    };
+    that.addNodeTypes = addNodeTypes;
+
+    var addNode = function (type, position) {
+        var node = mwGraphr.graphNode({
+            graph: that,
+            type: type
+        });
+        nodes.push(node);
+
+        if (position === undefined) {
+            position = {
+                left: $(element).width() / 2,
+                top: $(element).height() / 2
+            };
+        }
+        
+        var nodeElement = node.getElement();
+        $(element).append(nodeElement);
+        $(nodeElement).offset(position);
+
+        return node;
+    };
+    that.addNode = addNode;
+
+    var removeNode = function (node) {
+        nodes.mwRemove(node);
+        $(node.getElement()).detach();
+    };
+    that.removeNode = removeNode;
+
+    var initEval = function () {
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+            nodes[i].local = {};
+        }
+    };
+    that.initEval = initEval;
+
+    var haltEval = function () {
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+            delete nodes[i].local;
+        }
+    };
+    that.haltEval = haltEval;
+
+    var evaluate = function (global) {
+        return terminalNode.evaluate(global);
+    };
+    that.evaluate = evaluate;
+
+    var getElement = function () {
+        return table;
+    };
+    that.getElement = getElement;
+
+    var getSvg = function () {
+        return svg;
+    };
+    that.getSvg = getSvg;
+
+    return that;
+};
+
+mwGraphr.graphNode = function (spec) {
+    // Create a list item representing an input
+    var inputLi = function (inputNames) {
+        var li = document.createElement("li");
+        li.textContent = inputNames[1];
 
         $(li)
             .data("mwEdgeInput", null)
+        // A drop on an input represents setting the source of the input,
+        // overriding any previous source.
             .droppable({
                 drop: function (event, ui) {
                     var edge = ui.helper.data("mwEdgeInput");
                     if (edge) {
-                        edge.setEnd(this);
+                        edge.setEnd({
+                            element: this,
+                            object: that,
+                            input: inputNames[0]
+                        });
                     }
                 },
                 accept: ".graph-node-outputs li, .graph-node-inputs li"
             })
+        // Dragging an input represents removing the input and possibly
+        // putting it somewhere else.
             .draggable({
                 helper: function () {
                     var helper = document.createElement("div");
@@ -58,7 +250,11 @@ mwGraphr.addNode = function () {
                         helper.setAttribute("class", "graph-no-dot");
                     } else {
                         helper.setAttribute("class", "graph-node-dot");
-                        edge.setEnd(helper);
+                        edge.setEnd({
+                            element: helper,
+                            object: null,
+                            input: null
+                        });
                     }
                     return helper;
                 },
@@ -77,125 +273,355 @@ mwGraphr.addNode = function () {
                 }
             });
 
-        inputs.appendChild(li);
-    }
-    node.appendChild(inputs);
-    
-    outputs = document.createElement("ul");
-    outputs.setAttribute("class", "graph-node-outputs");
-    for (i = 0; i < 2; i++) {
-        li = document.createElement("li");
-        li.textContent = "output " + i;
-        $(li).data("mwEdgeOutputs", []);
+        return li;
+    };
 
-        $(li).draggable({
-            helper: function () {
-                var helper = document.createElement("div");
-                helper.setAttribute("class", "graph-node-dot");
-                var edge = mwGraphr.graphEdge({start: this, end: helper});
-                return helper;
-            },
-            cursorAt: {left: 6, top: 6},
-            drag: function (event, ui) {
-                ui.helper.data("mwEdgeInput").update();
-            },
-            stop: function (event, ui) {
-                var edge = ui.helper.data("mwEdgeInput");
-                if (edge) {
-                    edge.remove();
+    // Create a list item representing an output
+    var outputLi = function (outputNames) {
+        li = document.createElement("li");
+        li.textContent = outputNames[1];
+
+        // Dragging an output creates a new edge that can be dropped onto
+        // an input.
+        $(li)
+            .data("mwEdgeOutputs", [])
+            .draggable({
+                helper: function () {
+                    var helper = document.createElement("div");
+                    helper.setAttribute("class", "graph-node-dot");
+                    var edge = mwGraphr.graphEdge({
+                        start: {
+                            element: this,
+                            object: that,
+                            output: outputNames[0]
+                        },
+                        end: {
+                            element: helper,
+                            object: null,
+                            input: null
+                        },
+                        graph: graph
+                    });
+                    return helper;
+                },
+                cursorAt: {left: 6, top: 6},
+                drag: function (event, ui) {
+                    ui.helper.data("mwEdgeInput").update();
+                },
+                stop: function (event, ui) {
+                    var edge = ui.helper.data("mwEdgeInput");
+                    if (edge) {
+                        edge.remove();
+                    }
                 }
+            });
+
+        return li;
+    };
+
+    // Create the DOM elements for this node
+    var node = function () {
+        var element, title, close, background, inputs, outputs;
+        var li, i;
+
+        element = document.createElement("div");
+        element.setAttribute("class", "graph-node");
+        
+        title = document.createElement("div");
+        title.setAttribute("class", "graph-node-title");
+        title.textContent = type.name;
+        element.appendChild(title);
+
+        if (!type.terminal) {
+            close = document.createElement("div");
+            close.setAttribute("class", "graph-node-close");
+            $(close).click(function () { that.remove(); });
+            title.appendChild(close);
+        }
+
+        if (type.widget !== undefined) {
+            widget = type.widget();
+            element.appendChild(widget);
+        } else {
+            inputs = document.createElement("ul");
+            inputs.setAttribute("class", "graph-node-inputs");
+            for (i = 0; i < type.inputs.length; i++) {
+                inputs.appendChild(inputLi(type.inputs[i]));
             }
+            element.appendChild(inputs);
+        }
+        
+        outputs = document.createElement("ul");
+        outputs.setAttribute("class", "graph-node-outputs");
+        for (i = 0; i < type.outputs.length; i++) {
+            outputs.appendChild(outputLi(type.outputs[i]));
+        }
+        element.appendChild(outputs);
+
+        $(element).draggable({
+            handle: ".graph-node-title",
+            containment: "parent",
+            stack: ".graph-node",
+            drag: function (event, ui) {
+                $(this)
+                    .find(".graph-node-inputs li")
+                    .each(function (i) {
+                        var edge = $(this).data("mwEdgeInput");
+                        if (edge) {
+                            edge.update();
+                        }
+                    });
+                $(this)
+                    .find(".graph-node-outputs li")
+                    .each(function (i) {
+                        var edges = $(this).data("mwEdgeOutputs");
+                        for (var j = 0; j < edges.length; j++) {
+                            edges[j].update();
+                        }
+                    });
+            },
+            scroll: true
         });
 
-        outputs.appendChild(li);
-    }
-    node.appendChild(outputs);
-
-    $(node).draggable({
-        handle: ".graph-node-title",
-        containment: "parent",
-        stack: ".graph-node",
-        drag: function (event, ui) {
-            $(this)
-                .find(".graph-node-inputs li")
-                .each(function (i) {
-                    var edge = $(this).data("mwEdgeInput");
-                    if (edge) {
-                        edge.update();
-                    }
-                });
-            $(this)
-                .find(".graph-node-outputs li")
-                .each(function (i) {
-                    var edges = $(this).data("mwEdgeOutputs");
-                    for (var j = 0; j < edges.length; j++) {
-                        edges[j].update();
-                    }
-                });
-        },
-        scroll: true
-    });
-
-    $("#graph").append(node);
-};
-
-mwGraphr.graphEdge = function (spec) {
-    var that = document.createElementNS(mwGraphr.SVG_NS, "path");
-    that.style.stroke = "#000";
-    that.style.stroke_width = 3;
-    that.style.fill = "none";
-    that.style.z_index = -50;
-    document.getElementById("graph-svg").appendChild(that);
-
-    var start = spec.start;
-    var end = spec.end;
-    $(start).data("mwEdgeOutputs").push(that);
-    $(end).data("mwEdgeInput", that);
-
-    var update = function () {
-        var origin = $("#graph-svg").offset();
-        var p1 = $(start).offset();
-        p1.left -= origin.left - $(start).width();
-        p1.top -= origin.top - $(start).height() / 2;
-        var p2 = $(end).offset();
-        p2.left -= origin.left;
-        p2.top -= origin.top - $(end).height() / 2;
-
-        var commands = ["M", p1.left, p1.top,
-                        "C", (p1.left + p2.left) / 2, p1.top,
-                        (p1.left + p2.left) / 2, p2.top,
-                        p2.left, p2.top];
-        
-        that.setAttribute("d", commands.join(" "));
+        return element;
     };
-    that.update = update;
+
+    var that = {};
+
+    var graph = spec.graph;
+    var type = spec.type;
+
+    var widget = null;
+
+    var inputs = {};
+    var i;
+    for (i = 0; i < type.inputs.length; i++) {
+        inputs[type.inputs[i][0]] = null;
+    }
+
+    var outputs = {};
+    for (i = 0; i < type.outputs.length; i++) {
+        outputs[type.outputs[i][0]] = [];
+    }
+
+    var element = node();
+
+    var checkInput = function (input) {
+        if (inputs[input] === undefined) {
+            throw new Error(type.name + " has in input: " + input);
+        }
+    };
+
+    var checkOutput = function (output) {
+        if (outputs[output] === undefined) {
+            throw new Error(type.name + " has no output: " + output);
+        }
+    };
+
+    var addOutput = function (output, other, input, edge) {
+        checkOutput(output);
+        outputs[output].push({object: other, input: input, edge: edge});
+    };
+    that.addOutput = addOutput;
+
+    var removeOutput = function (output, other, input) {
+        checkOutput(output);
+        outputs[output].mwRemovePred(function (o) {
+            return (o.object === other) && (o.input === input);
+        });
+    };
+    that.removeOutput = removeOutput;
+
+    var setInput = function (input, other, output, edge) {
+        checkInput(input);
+        inputs[input] = {object: other, output: output, edge: edge};
+    };
+    that.setInput = setInput;
+
+    var removeInput = function (input) {
+        checkInput(input);
+        inputs[input] = null;
+    };
+    that.removeInput = removeInput;
 
     var remove = function () {
-        $(start).data("mwEdgeOutputs").mwRemove(that);
-        $(end).data("mwEdgeInput", null);
-        that.parentNode.removeChild(that);
+        var inputName, outputName, i;
+        for (inputName in inputs) {
+            if (inputs.hasOwnProperty(inputName)
+                && inputs[inputName] !== null) {
+                inputs[inputName].edge.remove();
+            }
+        }
+        for (outputName in outputs) {
+            if (outputs.hasOwnProperty(outputName)
+                && outputs[outputName] !== null) {
+                for (i = outputs[outputName].length - 1; i >= 0; i--) {
+                    outputs[outputName][i].edge.remove();
+                }
+            }
+        }
+        graph.removeNode(that);
     };
     that.remove = remove;
 
-    var setStart = function (x) {
-        $(start).data("mwEdgeOutputs").mwRemove(that);
-        $(x).data("mwEdgeOutputs").push(that);
-        start = x;
+    var evaluate = function (global) {
+        var inputValues = {}, outputValues;
+        var inputName, input;
+        if (type.widget !== undefined) {
+            inputValues.widget = widget;
+        } else {
+            for (inputName in inputs) {
+                if (inputs.hasOwnProperty(inputName)) {
+                    input = inputs[inputName];
+                    outputValues = input.object.evaluate(global);
+                    inputValues[inputName] = outputValues[input.output];
+                }
+            }
+        }
+        var ret = type.evaluate(inputValues, global, that.local);
+        return ret;
+    };
+    that.evaluate = evaluate;
+
+    var getElement = function () {
+        return element;
+    };
+    that.getElement = getElement;
+
+    var getType = function () {
+        return type;
+    };
+    that.getType = getType;
+
+    return that;
+};
+
+// Arguments:
+//     spec.start: the output the edge is connected to
+//                 { element: dom_elment,
+//                   object: node_object,
+//                   output: output_name }
+//     spec.end: the input the edge is connected to
+//               { element: dom_element,
+//                 object: node_object,
+//                 input: input_name }
+mwGraphr.graphEdge = function (spec) {
+    var that = {};
+
+    var graph = spec.graph;
+
+    var path = document.createElementNS(mwGraphr.SVG_NS, "path");
+    path.style.stroke = "#000";
+    path.style.stroke_width = 3;
+    path.style.fill = "none";
+    path.style.z_index = -50;
+    graph.getSvg().appendChild(path);
+
+    var start = spec.start;
+    var end = spec.end;
+    $(start.element).data("mwEdgeOutputs").push(that);
+    $(end.element).data("mwEdgeInput", that);
+
+    // Visually update the path to correspond with the start and end
+    var update = function () {
+        var origin = $(graph.getSvg()).offset();
+        var p1 = $(start.element).offset();
+        p1.left -= origin.left - $(start.element).width();
+        p1.top -= origin.top - $(start.element).height() / 2;
+        var p2 = $(end.element).offset();
+        p2.left -= origin.left;
+        p2.top -= origin.top - $(end.element).height() / 2;
+        var mid = (p1.left + p2.left) / 2;
+
+        var commands = ["M", p1.left, p1.top,
+                        "C", mid, p1.top,
+                        mid, p2.top,
+                        p2.left, p2.top];
+        
+        path.setAttribute("d", commands.join(" "));
+    };
+    that.update = update;
+
+    // Remove an edge and clean up the node object connections,
+    // the dom element references, and the path object itself.
+    var remove = function () {
+        if (end.object !== null) {
+            start.object.removeOutput(start.output, end.object, end.input);
+            end.object.removeInput(end.input);
+        }
+
+        $(start.element).data("mwEdgeOutputs").mwRemove(that);
+        $(end.element).data("mwEdgeInput", null);
+
+        path.parentNode.removeChild(path);
+    };
+    that.remove = remove;
+
+    var setStart = function (newStart) {
+        // If this edge is already connecting two nodes,
+        // then remove that connection
+        if (start.object !== null) {
+            start.object.removeOutput(start.output, end.object, end.input);
+            end.object.removeInput(end.input);
+        }
+
+        // Whether the new start already has connections or not,
+        // just add this one on
+        if (newStart.object !== null) {
+            newStart.addOutput(
+                newStart.output, end.object, end.input, that);
+            end.object.setInput(
+                end.input, newStart.object, newStart.output, that);
+        }
+
+        $(start.element).data("mwEdgeOutputs").mwRemove(that);
+        $(newStart.element).data("mwEdgeOutputs").push(that);
+        start = newStart;
+
         that.update();
     };
     that.setStart = setStart;
 
-    var setEnd = function (x) {
-        $(end).data("mwEdgeInput", null);
-        var oldEdge = $(x).data("mwEdgeInput");
+    var setEnd = function (newEnd) {
+        // If newEnd already has an edge, remove those connections
+        var oldEdge = $(newEnd.element).data("mwEdgeInput");
         if (oldEdge) {
             oldEdge.remove();
         }
-        $(x).data("mwEdgeInput", that);
-        end = x;
+
+        // If this edge already connected two nodes together,
+        // then we need to clean it up.
+        if (end.object !== null) {
+            start.object.removeOutput(start.output, end.object, end.input);
+            end.object.removeInput(end.input);
+        }
+
+        // If this edge is being dropped on an input
+        // then we need to establish a new connection
+        if (newEnd.object !== null) {
+            start.object.addOutput(
+                start.output, newEnd.object, newEnd.input, that);
+            newEnd.object.setInput(
+                newEnd.input, start.object, start.output, that);
+        }
+
+        $(end.element).data("mwEdgeInput", null);
+        $(newEnd.element).data("mwEdgeInput", that);
+        end = newEnd;
+
         that.update();
     };
     that.setEnd = setEnd;
+
+    var getStart = function () {
+        return start;
+    };
+    that.getStart = getStart;
+
+    var getEnd = function () {
+        return end;
+    };
+    that.getEnd = getEnd;
 
     return that;
 }
