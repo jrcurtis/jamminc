@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <title>wav test</title>
+
+    <script src="wav.js"></script>
+
+    <script>
+      window.onload = function () {
+          var audio = document.getElementById("audio");
+          var data = [[], []];
+          var i, s;
+          for (i = 0; i < 44100; i++) {
+              s = Math.sin(2 * Math.PI * 440 * i / 44100) * 0.5;
+              data[0].push(s);
+              data[1].push(s > 0 ? 1 : -1);
+          }
+          var wav = mwWav.wav({channels: 2});
+          wav.write(data);
+          var wavData = wav.getWav();
+          audio.src = mwWav.dataURI(wavData, "audio/wav");
+          audio.play();
+      };
+    </script>
+  </head>
+
+  <body>
+    <audio id="audio" controls></audio>
+
+  </body>
+</html>
+
