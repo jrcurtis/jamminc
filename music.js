@@ -146,6 +146,15 @@ $(function () {
             }
         },
         {
+            name: "Input",
+            outputs: [["note", "Note"]],
+            evaluate: function (inputs, global) {
+                return {
+                    note: global.note
+                };
+            }
+        },
+        {
             name: "Output",
             terminal: true,
             inputs: [["output", "Output"]],
@@ -156,6 +165,14 @@ $(function () {
     );
 
     $("#generate-music").click(function (event) {
+        var line, lines = document.getElementById("notes").value.split("\n");
+        var notes = [];
+        var i;
+        for (i = 0; i < lines.length; i++) {
+            line = lines[i].split(" ");
+            notes.push([parseFloat(line[0]), parseFloat(line[1])]);
+        }
+
         var wav = mwWav.wav();
         var global = {};
         global.time = 0;
@@ -165,13 +182,21 @@ $(function () {
         global.output = [];
 
         graph.initEval();
-        var i, sample;
-        for (i = 0; i < wav.getSampleRate(); i++) {
+        var sample, note_time = 0;
+        i = 0;
+        while (i < notes.length) {
+            global.note = notes[i][0];
+            note_time += 1 / wav.getSampleRate();
+            if (note_time > notes[i][1]) {
+                note_time = 0;
+                i++;
+            }
+
             sample = graph.evaluate(global);
             global.output.push(sample);
             global.lastSample = sample;
             global.sample++;
-            global.time = global.sample / 44100;
+            global.time = global.sample / wav.getSampleRate();
         }
         graph.haltEval();
 
@@ -179,6 +204,10 @@ $(function () {
         var audio = document.getElementById("music-audio");
         audio.setAttribute("src", wav.getDataURI());
         audio.play();
+    });
+
+    $("#save-music").click(function (event) {
+        $("#json-output").attr("value", graph.serialize());
     });
 });
 

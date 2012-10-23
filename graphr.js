@@ -119,17 +119,17 @@ mwGraphr.graph = function (spec) {
     
     spec = spec || {};
 
-    if (mwGraphr.graph.count) {
+    if (mwGraphr.graph.count !== undefined) {
         mwGraphr.graph.count++;
     } else {
         mwGraphr.graph.count = 1;
     }
 
     var that = {};
-    that.id = mwGraphr.graph.count;
+    var id = mwGraphr.graph.count;
 
-    var width = 800;
-    var height = 600;
+    var width = spec.width || 800;
+    var height = spec.height || 600;
 
     var table, element, svg, selectionElement;
     makeGraph();
@@ -147,9 +147,8 @@ mwGraphr.graph = function (spec) {
             if (arguments[i].terminal) {
                 terminalNodeType = arguments[i];
                 terminalNode = addNode(terminalNodeType);
-            } else {
-                nodeTypes.push(arguments[i]);
             }
+            nodeTypes.push(arguments[i]);
         }
         addSelectionElements();
     };
@@ -204,6 +203,25 @@ mwGraphr.graph = function (spec) {
     };
     that.evaluate = evaluate;
 
+    var serialize = function () {
+        var data = {};
+        data.nodes = {};
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+            console.log("node serialize");
+            data.nodes[nodes[i].getId()] = nodes[i].serialize();
+        }
+        return JSON.stringify(data);
+    };
+    that.serialize = serialize;
+
+    var deserialize = function (json) {
+        var data = JSON.parse(json);
+
+        
+    };
+    that.deserialize = deserialize;
+
     var getElement = function () {
         return table;
     };
@@ -213,6 +231,11 @@ mwGraphr.graph = function (spec) {
         return svg;
     };
     that.getSvg = getSvg;
+
+    var getId = function () {
+        return id;
+    };
+    that.getId = getId;
 
     return that;
 };
@@ -388,6 +411,14 @@ mwGraphr.graphNode = function (spec) {
 
     var that = {};
 
+    if (mwGraphr.graphNode.count !== undefined) {
+        mwGraphr.graphNode.count++;
+    } else {
+        mwGraphr.graphNode.count = 1;
+    }
+
+    var id = mwGraphr.graphNode.count;
+
     var graph = spec.graph;
     var type = spec.type;
 
@@ -483,6 +514,48 @@ mwGraphr.graphNode = function (spec) {
     };
     that.evaluate = evaluate;
 
+    var serialize = function () {
+        var data = {};
+
+        data.offset = $(element).offset();
+        data.type = type.name;
+
+        data.inputs = {};
+        var inputName;
+        for (inputName in inputs) {
+            if (inputs.hasOwnProperty(inputName)
+                    && inputs[inputName] !== null) {
+                data.inputs[inputName] = {
+                    object: inputs[inputName].object.getId(),
+                    output: inputs[inputName].output
+                };
+            }
+        }
+
+        data.outputs = {};
+        var i, outputName;
+        for (outputName in outputs) {
+            if (outputs.hasOwnProperty(outputName)
+                   && outputs[outputName] && outputs[outputName].length) {
+                data.outputs[outputName] = [];
+                for (i = 0; i < outputs[outputName].length; i++) {
+                    data.outputs[outputName].push({
+                        object: outputs[outputName][i].object.getId(),
+                        input: outputs[outputName][i].input
+                    });
+                }
+            }
+        }
+
+        return data;
+    };
+    that.serialize = serialize;
+
+    var deserialize = function (data) {
+        $(element).offset(data.offset);
+    };
+    that.deserialize = deserialize;
+
     var getElement = function () {
         return element;
     };
@@ -492,6 +565,11 @@ mwGraphr.graphNode = function (spec) {
         return type;
     };
     that.getType = getType;
+
+    var getId = function () {
+        return 'id_' + id;
+    };
+    that.getId = getId;
 
     return that;
 };
