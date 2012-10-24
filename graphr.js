@@ -179,17 +179,21 @@ mwGraphr.graph = function (spec) {
     that.removeNode = removeNode;
 
     var initEval = function () {
-        var i;
-        for (i = 0; i < nodes.length; i++) {
-            nodes[i].local = {};
+        var nodeId;
+        for (nodeId in nodes) {
+            if (nodes.hasOwnProperty(nodeId)) {
+                nodes[nodeId].local = {};
+            }
         }
     };
     that.initEval = initEval;
 
     var haltEval = function () {
-        var i;
-        for (i = 0; i < nodes.length; i++) {
-            delete nodes[i].local;
+        var nodeId;
+        for (nodeId in nodes) {
+            if (nodes.hasOwnProperty(nodeId)) {
+                delete nodes[nodeId].local;
+            }
         }
     };
     that.haltEval = haltEval;
@@ -214,17 +218,21 @@ mwGraphr.graph = function (spec) {
 
     var deserialize = function (json) {
         $(element).children(".graph-node").detach();
+        terminalNode = null;
 
         var data = JSON.parse(json);
 
         // Create all the nodes and put them in the graph
-        var nodeId, nodeData;
+        var nodeId, nodeData, node;
         for (nodeId in data.nodes) {
             if (data.nodes.hasOwnProperty(nodeId)) {
                 nodeData = data.nodes[nodeId];
-                that.addNode(
+                node = that.addNode(
                     { type: nodeTypes[nodeData.type], id: nodeId },
                     nodeData.offset);
+                if (nodeData.type === terminalNodeType.name) {
+                    terminalNode = node;
+                }
             }
         }
 
@@ -476,7 +484,7 @@ mwGraphr.graphNode = function (spec) {
 
     var checkInput = function (input) {
         if (inputs[input] === undefined) {
-            throw new Error(type.name + " has in input: " + input);
+            throw new Error(type.name + " has no input: " + input);
         }
     };
 
