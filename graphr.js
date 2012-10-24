@@ -49,21 +49,18 @@ mwGraphr.graph = function (spec) {
         };
 
         $(selectionElement).children().detach();
-        nodeTypes.sort(function (a, b) {
-            if (a.name < b.name) { return -1; }
-            else if (a.name > b.name) { return 1; }
-            else { return 0; }
-        });
+        var typeOrder = Object.keys(nodeTypes);
+        typeOrder.sort();
 
         var i, li;
-        for (i = 0; i < nodeTypes.length; i++) {
+        for (i = 0; i < typeOrder.length; i++) {
             li = document.createElement("li");
-            li.textContent = nodeTypes[i].name;
+            li.textContent = nodeTypes[typeOrder[i]].name;
             selectionElement.appendChild(li);
 
             $(li)
                 .draggable({
-                    helper: makeHelper(nodeTypes[i]),
+                    helper: makeHelper(nodeTypes[typeOrder[i]]),
                 });
         };
     };
@@ -87,7 +84,7 @@ mwGraphr.graph = function (spec) {
                 accept: ".graph-node-selection li",
                 drop: function (event, ui) {
                     that.addNode(
-                        ui.helper.data("mwNodeType"),
+                        {type: ui.helper.data("mwNodeType")},
                         $(ui.helper).offset());
                 }
             });
@@ -134,7 +131,7 @@ mwGraphr.graph = function (spec) {
     var table, element, svg, selectionElement;
     makeGraph();
 
-    var nodeTypes = [];
+    var nodeTypes = {};
     var nodes = [];
     var terminalNodeType = null;
     var terminalNode = null;
@@ -146,31 +143,30 @@ mwGraphr.graph = function (spec) {
 
             if (arguments[i].terminal) {
                 terminalNodeType = arguments[i];
-                terminalNode = addNode(terminalNodeType);
+                terminalNode = addNode({type: terminalNodeType});
             }
-            nodeTypes.push(arguments[i]);
+
+            nodeTypes[arguments[i].name] = arguments[i];
         }
         addSelectionElements();
     };
     that.addNodeTypes = addNodeTypes;
 
-    var addNode = function (type, position) {
-        var node = mwGraphr.graphNode({
-            graph: that,
-            type: type
-        });
-        nodes.push(node);
+    var addNode = function (nodeSpec, offset) {
+        nodeSpec.graph = that;
+        var node = mwGraphr.graphNode(nodeSpec);
+        nodes[node.getId()] = node;
 
-        if (position === undefined) {
-            position = {
+        if (offset === undefined) {
+            offset = {
                 left: $(element).width() / 2,
                 top: $(element).height() / 2
             };
         }
-        
+
         var nodeElement = node.getElement();
         $(element).append(nodeElement);
-        $(nodeElement).offset(position);
+        $(nodeElement).offset(offset);
 
         return node;
     };
@@ -206,19 +202,57 @@ mwGraphr.graph = function (spec) {
     var serialize = function () {
         var data = {};
         data.nodes = {};
-        var i;
-        for (i = 0; i < nodes.length; i++) {
-            console.log("node serialize");
-            data.nodes[nodes[i].getId()] = nodes[i].serialize();
+        var nodeId;
+        for (nodeId in nodes) {
+            if (nodes.hasOwnProperty(nodeId)) {
+                data.nodes[nodeId] = nodes[nodeId].serialize();
+            }
         }
         return JSON.stringify(data);
     };
     that.serialize = serialize;
 
     var deserialize = function (json) {
+        $(element).children(".graph-node").detach();
+
         var data = JSON.parse(json);
 
-        
+        // Create all the nodes and put them in the graph
+        var nodeId, nodeData;
+        for (nodeId in data.nodes) {
+            if (data.nodes.hasOwnProperty(nodeId)) {
+                nodeData = data.nodes[nodeId];
+                that.addNode(
+                    { type: nodeTypes[nodeData.type], id: nodeId },
+                    nodeData.offset);
+            }
+        }
+
+        // Now that all the nodes exist, create the connections
+        var inputName, inputData, edge;
+        for (nodeId in data.nodes) {
+            if (data.nodes.hasOwnProperty(nodeId)) {
+                nodeData = data.nodes[nodeId];
+                for (inputName in nodeData.inputs) {
+                    if (nodeData.inputs.hasOwnProperty(inputName)) {
+                        inputData = nodeData.inputs[inputName];
+
+                        edge = mwGraphr.graphEdge({
+                            start: {
+                                object: nodes[inputData.object],
+                                output: inputData.output
+                            },
+                            end: {
+                                object: nodes[nodeId],
+                                input: inputName
+                            },
+                            graph: that
+                        });
+                        edge.update();
+                    }
+                }
+            }
+        }
     };
     that.deserialize = deserialize;
 
@@ -245,6 +279,7 @@ mwGraphr.graphNode = function (spec) {
     var inputLi = function (inputNames) {
         var li = document.createElement("li");
         li.textContent = inputNames[1];
+        inputElements[inputNames[0]] = li;
 
         $(li)
             .data("mwEdgeInput", null)
@@ -301,8 +336,9 @@ mwGraphr.graphNode = function (spec) {
 
     // Create a list item representing an output
     var outputLi = function (outputNames) {
-        li = document.createElement("li");
+        var li = document.createElement("li");
         li.textContent = outputNames[1];
+        outputElements[outputNames[0]] = li;
 
         // Dragging an output creates a new edge that can be dropped onto
         // an input.
@@ -314,7 +350,6 @@ mwGraphr.graphNode = function (spec) {
                     helper.setAttribute("class", "graph-node-dot");
                     var edge = mwGraphr.graphEdge({
                         start: {
-                            element: this,
                             object: that,
                             output: outputNames[0]
                         },
@@ -417,7 +452,7 @@ mwGraphr.graphNode = function (spec) {
         mwGraphr.graphNode.count = 1;
     }
 
-    var id = mwGraphr.graphNode.count;
+    var id = spec.id || ('id_' + mwGraphr.graphNode.count);
 
     var graph = spec.graph;
     var type = spec.type;
@@ -435,6 +470,8 @@ mwGraphr.graphNode = function (spec) {
         outputs[type.outputs[i][0]] = [];
     }
 
+    var inputElements = {};
+    var outputElements = {};
     var element = node();
 
     var checkInput = function (input) {
@@ -551,15 +588,20 @@ mwGraphr.graphNode = function (spec) {
     };
     that.serialize = serialize;
 
-    var deserialize = function (data) {
-        $(element).offset(data.offset);
-    };
-    that.deserialize = deserialize;
-
     var getElement = function () {
         return element;
     };
     that.getElement = getElement;
+
+    var getInputElement = function (name) {
+        return inputElements[name];
+    };
+    that.getInputElement = getInputElement;
+
+    var getOutputElement = function (name) {
+        return outputElements[name];
+    };
+    that.getOutputElement = getOutputElement;
 
     var getType = function () {
         return type;
@@ -567,7 +609,7 @@ mwGraphr.graphNode = function (spec) {
     that.getType = getType;
 
     var getId = function () {
-        return 'id_' + id;
+        return id;
     };
     that.getId = getId;
 
@@ -576,13 +618,14 @@ mwGraphr.graphNode = function (spec) {
 
 // Arguments:
 //     spec.start: the output the edge is connected to
-//                 { element: dom_elment,
-//                   object: node_object,
+//                 { element: dom_element,
+//                   object: mwGraphNode,
 //                   output: output_name }
 //     spec.end: the input the edge is connected to
 //               { element: dom_element,
-//                 object: node_object,
+//                 object: mwGraphNode,
 //                 input: input_name }
+//     spec.graph: mwGraph
 mwGraphr.graphEdge = function (spec) {
     var that = {};
 
@@ -592,13 +635,15 @@ mwGraphr.graphEdge = function (spec) {
     path.style.stroke = "#000";
     path.style.stroke_width = 3;
     path.style.fill = "none";
-    path.style.z_index = -50;
     graph.getSvg().appendChild(path);
 
     var start = spec.start;
+    start.element = start.element || start.object.getOutputElement(start.output);
+    //$(start.element).data("mwEdgeOutputs").push(that);
+
     var end = spec.end;
-    $(start.element).data("mwEdgeOutputs").push(that);
-    $(end.element).data("mwEdgeInput", that);
+    end.element = end.element || end.object.getInputElement(end.input);
+    //$(end.element).data("mwEdgeInput", that);
 
     // Visually update the path to correspond with the start and end
     var update = function () {
@@ -638,15 +683,15 @@ mwGraphr.graphEdge = function (spec) {
     var setStart = function (newStart) {
         // If this edge is already connecting two nodes,
         // then remove that connection
-        if (start.object !== null) {
+        if (start.object !== null && end.object !== null) {
             start.object.removeOutput(start.output, end.object, end.input);
             end.object.removeInput(end.input);
         }
 
         // Whether the new start already has connections or not,
         // just add this one on
-        if (newStart.object !== null) {
-            newStart.addOutput(
+        if (newStart.object !== null && end.object !== null) {
+            newStart.object.addOutput(
                 newStart.output, end.object, end.input, that);
             end.object.setInput(
                 end.input, newStart.object, newStart.output, that);
@@ -669,14 +714,14 @@ mwGraphr.graphEdge = function (spec) {
 
         // If this edge already connected two nodes together,
         // then we need to clean it up.
-        if (end.object !== null) {
+        if (end.object !== null && start.object !== null) {
             start.object.removeOutput(start.output, end.object, end.input);
             end.object.removeInput(end.input);
         }
 
         // If this edge is being dropped on an input
         // then we need to establish a new connection
-        if (newEnd.object !== null) {
+        if (newEnd.object !== null && start.object !== null) {
             start.object.addOutput(
                 start.output, newEnd.object, newEnd.input, that);
             newEnd.object.setInput(
@@ -690,6 +735,9 @@ mwGraphr.graphEdge = function (spec) {
         that.update();
     };
     that.setEnd = setEnd;
+
+    setStart(start);
+    setEnd(end);
 
     var getStart = function () {
         return start;

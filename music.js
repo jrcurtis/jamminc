@@ -206,8 +206,12 @@ $(function () {
         audio.play();
     });
 
-    $("#save-music").click(function (event) {
-        $("#json-output").attr("value", graph.serialize());
+    $("#generate-json").click(function (event) {
+        $("#json-field").attr("value", graph.serialize());
+    });
+
+    $("#load-json").click(function (event) {
+        graph.deserialize($("#json-field").attr("value"));
     });
 });
 

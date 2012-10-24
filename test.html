@@ -18,22 +18,27 @@
   </head>
   <body>
 
+    <div id="music-ui"></div>
     <table>
-      <tr>
-        <td id="music-ui"></td>
-      </tr>
       <tr>
         <td>
           <textarea id="notes" rows="5" cols="10"></textarea>
+        </td>
+        <td>
           <input id="generate-music" type="button" value="Generate Music"/>
+        </td>
+        <td>
           <audio id="music-audio" controls></audio>
         </td>
       </tr>
       <tr>
-        <td>
-          <textarea id="json-output" rows="20" cols="80"></textarea>
-          <input id="save-music" type="button" value="Save" />
-        </td>
+        <td colspan="2" rowspan="2">
+          <textarea id="json-field" rows="10" cols="30"></textarea>
+       </td>
+       <td><input id="generate-json" type="button" value="Generate JSON" /></td>
+      </tr>
+      <tr>
+        <td><input id="load-json" type="button" value="Load JSON" /></td>
       </tr>
     </table>
 
