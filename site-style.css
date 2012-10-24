@@ -1,0 +1,32 @@
+
+#popular {
+    float: left;
+    width: 200px;
+    border: solid;
+    border-width: 2px;
+    border-color: #000;
+}
+
+#news {
+    
+}
+
+.cleaner {
+    clear: both;
+    height: 1px;
+}
+
+span.view-label {
+    float: left;
+}
+
+ul.view-options {
+    list-style: none;
+    display: inline;
+}
+
+ul.view-options>li {
+    float: left;
+    padding-left: 3px;
+}
+
