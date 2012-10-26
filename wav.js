@@ -1,7 +1,7 @@
 
-mwWav = {};
+mwWAV = {};
 
-mwWav.dataURI = function (data, mime, charset) {
+mwWAV.dataURI = function (data, mime, charset) {
     var uri = "data:" + mime;
     if (charset !== undefined) {
         uri += ";" + charset;
@@ -12,7 +12,11 @@ mwWav.dataURI = function (data, mime, charset) {
 };
 
 
-mwWav.wav = function (spec) {
+mwWAV.WAV = function (spec) {
+    var that = this;
+    var channels, rate, bits, blockAlign, bytesPerSecond;
+    var maxSample, sampleShift, channelData;
+
     var encodeInt = function (num, bytes) {
         var str = "";
         var i;
@@ -76,23 +80,7 @@ mwWav.wav = function (spec) {
         return sample;
     };
 
-    spec = spec || {};
-    var that = {};
-
-    var channels = spec.channels || 1;
-    var rate = spec.rate || 44100;
-    var bits = spec.bits || 16;
-    var blockAlign = channels * bits / 8;
-    var bytesPerSecond = rate * channels * bits / 8;
-    var maxSample = Math.pow(2, bits === 8 ? bits : bits - 1) - 1;
-    var sampleShift = Math.pow(2, bits);
-
-    var channelData = [];
-    for (var i = 0; i < channels; i++) {
-        channelData.push([]);
-    }
-
-    var write = function (data) {
+    this.write = function (data) {
         if (data.length !== channels) {
             throw new Error("Must write the correct number of channels");
         }
@@ -105,37 +93,47 @@ mwWav.wav = function (spec) {
             }
         }
     };
-    that.write = write;
 
-    var getWav = function () {
+    this.getWav = function () {
         return encodeChunk(
             "RIFF",
             [[0, "WAVE"],
              [0, formatChunk()],
              [0, dataChunk()]]);
     };
-    that.getWav = getWav;
 
-    var getDataURI = function () {
-        return mwWav.dataURI(getWav(), "audio/wav");
+    this.getDataURI = function () {
+        return mwWAV.dataURI(this.getWav(), "audio/wav");
     };
-    that.getDataURI = getDataURI;
 
-    var getChannels = function () {
+    this.getChannels = function () {
         return channels;
     };
-    that.getChannels = getChannels;
 
-    var getSampleRate = function () {
+    this.getSampleRate = function () {
         return rate;
     };
-    that.getSampleRate = getSampleRate;
 
-    var getBitsPerSample = function () {
+    this.getBitsPerSample = function () {
         return bits;
     };
-    that.getBitsPerSample = getBitsPerSample;
 
-    return that;
+    var init = function () {
+        spec = spec || {};
+
+        channels = spec.channels || 1;
+        rate = spec.rate || 44100;
+        bits = spec.bits || 16;
+        blockAlign = channels * bits / 8;
+        bytesPerSecond = rate * channels * bits / 8;
+        maxSample = Math.pow(2, bits === 8 ? bits : bits - 1) - 1;
+        sampleShift = Math.pow(2, bits);
+
+        channelData = [];
+        for (var i = 0; i < channels; i++) {
+            channelData.push([]);
+        }
+    };
+    init();
 };
 

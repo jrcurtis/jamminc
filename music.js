@@ -21,7 +21,7 @@ jamminc.fmod = function (n, d) {
 };
 
 $(function () {
-    var graph = mwGraphr.graph({
+    var graph = new mwGraphr.Graph({
         placement: document.getElementById("music-ui")
     });
 
@@ -173,7 +173,7 @@ $(function () {
             notes.push([parseFloat(line[0]), parseFloat(line[1])]);
         }
 
-        var wav = mwWav.wav();
+        var wav = new mwWAV.WAV();
         var global = {};
         global.time = 0;
         global.sample = 0;
