@@ -213,7 +213,11 @@ mwGraphr.Graph = function (spec) {
             if (data.nodes.hasOwnProperty(nodeId)) {
                 nodeData = data.nodes[nodeId];
                 node = this.addNode(
-                    { type: nodeTypes[nodeData.type], id: nodeId },
+                    {
+                        id: nodeId,
+                        type: nodeTypes[nodeData.type],
+                        widget: nodeData.widget
+                    },
                     nodeData.offset);
                 if (nodeData.type === terminalNodeType.name) {
                     terminalNode = node;
@@ -412,16 +416,19 @@ mwGraphr.GraphNode = function (spec) {
         }
 
         if (type.widget !== undefined) {
-            widget = type.widget();
-            element.appendChild(widget);
-        } else {
-            inputs = document.createElement("ul");
-            inputs.setAttribute("class", "graph-node-inputs");
-            for (i = 0; i < type.inputs.length; i++) {
-                inputs.appendChild(inputLi(type.inputs[i]));
+            widget = new type.widget();
+            if (spec.widget !== undefined) {
+                widget.setValue(spec.widget);
             }
-            element.appendChild(inputs);
+            element.appendChild(widget.getElement());
         }
+
+        inputs = document.createElement("ul");
+        inputs.setAttribute("class", "graph-node-inputs");
+        for (i = 0; i < type.inputs.length; i++) {
+            inputs.appendChild(inputLi(type.inputs[i]));
+        }
+        element.appendChild(inputs);
         
         outputs = document.createElement("ul");
         outputs.setAttribute("class", "graph-node-outputs");
@@ -515,7 +522,7 @@ mwGraphr.GraphNode = function (spec) {
         var inputValues = {}, outputValues;
         var inputName, input;
         if (type.widget !== undefined) {
-            inputValues.widget = widget;
+            inputValues.widget = widget.getValue();
         } else {
             for (inputName in inputs) {
                 if (inputs.hasOwnProperty(inputName)) {
@@ -560,6 +567,10 @@ mwGraphr.GraphNode = function (spec) {
                     });
                 }
             }
+        }
+
+        if (type.widget !== undefined) {
+            data.widget = widget.getValue();
         }
 
         return data;

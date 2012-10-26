@@ -16,6 +16,25 @@ jamminc.makeWaveform = function (name, func) {
     };
 };
 
+jamminc.TextWidget = function () {
+    this.element = $(document.createElement("input"))
+        .attr("type", "text")
+        .css({ width: "50px" })
+        .get(0);
+
+    this.getElement = function () {
+        return this.element;
+    };
+    
+    this.getValue = function () {
+        return parseFloat(this.element.value);
+    };
+
+    this.setValue = function (value) {
+        this.element.value = value;
+    };
+};
+
 jamminc.fmod = function (n, d) {
     return n - Math.floor(n / d) * d;
 };
@@ -133,15 +152,10 @@ $(function () {
         {
             name: "Number",
             outputs: [["num", "Number"]],
-            widget: function () {
-                var element = document.createElement("input");
-                element.setAttribute("type", "text");
-                element.style.width = "50px";
-                return element;
-            },
+            widget: jamminc.TextWidget,
             evaluate: function (inputs, global) {
                 return {
-                    num: parseFloat(inputs.widget.value)
+                    num: inputs.widget
                 };
             }
         },
