@@ -1,9 +1,9 @@
 
-var mwGraphr = {};
+var graphr = {};
 
-mwGraphr.SVG_NS = "http://www.w3.org/2000/svg";
+graphr.SVG_NS = "http://www.w3.org/2000/svg";
 
-mwGraphr.randomColor = function () {
+graphr.randomColor = function () {
     var color = '#';
     for (var i = 0; i < 3; i++) {
         color += Math.floor(256 * Math.random()).toString(16);
@@ -11,7 +11,7 @@ mwGraphr.randomColor = function () {
     return color;
 };
 
-mwGraphr.init = function () {
+graphr.init = function () {
     Array.prototype.mwRemove = function (elem) {
         var i = this.indexOf(elem);
         if (i >= 0) {
@@ -29,12 +29,93 @@ mwGraphr.init = function () {
     };
 };
 
+graphr.nodeCategories = { "": "#FAA" };
+
+graphr.addNodeCategory = function (category, color) {
+    graphr.nodeCategories[category] = color;
+};
+
+// spec: {
+//    name: type name,
+//    inputs: list of inputs accepted
+//    outputs: list of outputs produced
+//    widget: a widget to appear in the node
+//    evaluate: a function to produce the outputs given the inputs
+// }
+graphr.makeNodeType = function (spec) {
+    return {
+        name: spec.name,
+        category: spec.category || "",
+        inputs: spec.inputs || [],
+        outputs: spec.outputs || [],
+        widget: spec.widget || null,
+        evaluate: spec.evaluate || function () {},
+        terminal: spec.inputs && !spec.outputs
+    };
+};
+
+graphr.makeOutput = function (displayName, name) {
+    return {
+        displayName: displayName,
+        name: name
+    };
+};
+
+graphr.makeInput = function (displayName, name, defaultValue, widget) {
+    return {
+        displayName: displayName,
+        name: name,
+        defaultValue: defaultValue,
+        widget: widget
+    };
+};
+
 // Arguments:
 //     spec.placement: the DOM element to place the graph in
-mwGraphr.Graph = function (spec) {
+graphr.Graph = function (spec) {
     var that = this;
-    var id, width, height, table, element, svg, selectionElement;
+    var id, width, height, graphSize, table, element, svg, selectionElement,
+        scrollContainer, navigationMenu;
     var nodes, nodeTypes, terminalNodeType, terminalNode;
+
+    var navigateTo = function (id) {
+        if (id.getId !== undefined) {
+            id = id.getId();
+        }
+
+        var position = $(nodes[id].getElement()).position();
+        position.left -= width / 2;
+        position.top -= height / 2;
+        $(scrollContainer)
+            .scrollLeft(position.left)
+            .scrollTop(position.top);
+    };
+
+    var makeNavigationMenu = function () {
+        navigationMenu = $(document.createElement("select"))
+            .change(function (event) {
+                $(this)
+                    .find("option:selected")
+                    .each(function (i, option) {
+                        if (option.value) {
+                            navigateTo(option.value);
+                        }
+                    });
+
+                this.selectedIndex = 0;
+            })
+            .append($(document.createElement("option"))
+                    .append("--- Navigate ---"))
+            .get(0);
+    };
+
+    var addNavigationOption = function (node) {
+        $(navigationMenu)
+            .append($(document.createElement("option"))
+                    .append(node.getType().name)
+                    .attr("value", node.getId())
+                   );
+    };
 
     var makeNodeSelection = function () {
         selectionElement = document.createElement("ul");
@@ -45,7 +126,7 @@ mwGraphr.Graph = function (spec) {
     var addSelectionElements = function () {
         var makeHelper = function (type) {
             return function () {
-                var tempNode = new mwGraphr.GraphNode({type: type});
+                var tempNode = new graphr.GraphNode({type: type});
                 var helperElement = tempNode.getElement();
                 $(helperElement).data("mwNodeType", type);
                 return helperElement;
@@ -69,7 +150,9 @@ mwGraphr.Graph = function (spec) {
             $(li)
                 .draggable({
                     helper: makeHelper(nodeTypes[typeOrder[i]]),
+                    appendTo: 'body'
                 });
+                
         };
     };
 
@@ -82,35 +165,72 @@ mwGraphr.Graph = function (spec) {
         row.appendChild(leftCell);
         var rightCell = document.createElement("td");
         row.appendChild(rightCell);
+
+        scrollContainer = document.createElement("div");
+        scrollContainer.style.width = width + "px";
+        scrollContainer.style.height = height + "px";
+        scrollContainer.style.overflow = "auto";
+        leftCell.appendChild(scrollContainer);
         
         element = document.createElement("div");
         element.setAttribute("class", "graph");
-        leftCell.appendChild(element);
+        element.style.position = "relative";
+        element.style.width = graphSize + "px";
+        element.style.height = graphSize + "px";
+        scrollContainer.appendChild(element);
 
         $(element)
+        // Accept nodes being dropped onto the workspace
             .droppable({
                 accept: ".graph-node-selection li",
                 drop: function (event, ui) {
                     that.addNode(
-                        {type: ui.helper.data("mwNodeType")},
+                        { type: ui.helper.data("mwNodeType") },
                         $(ui.helper).offset());
                 }
+            })
+        // Allow panning around the workspace with the mouse
+            .mousedown(function (event) {
+                if (event.button !== 0) {
+                    return;
+                }
+
+                $(this)
+                    .data("mwLastMousePos",
+                          { x: event.pageX, y: event.pageY })
+                    .bind("mousemove", function (event) {
+                        var $sc = $(scrollContainer);
+                        var lastPos = $(this).data("mwLastMousePos");
+                        var x = $sc.scrollLeft() - event.pageX + lastPos.x;
+                        var y = $sc.scrollTop() - event.pageY + lastPos.y;
+                        $sc
+                            .scrollLeft(x)
+                            .scrollTop(y);
+                        $(this).data("mwLastMousePos",
+                                     { x: event.pageX, y: event.pageY });
+                    });
+            })
+            .mouseup(function (event) {
+                $(this).unbind("mousemove");
             });
 
-        svg = document.createElementNS(mwGraphr.SVG_NS, "svg");
+        svg = document.createElementNS(graphr.SVG_NS, "svg");
         svg.setAttribute("class", "graph-svg");
+        svg.style.width = graphSize + "px";
+        svg.style.height = graphSize + "px";
         element.appendChild(svg);
+
         var x, y, path;
-        for (x = 0; x < width; x += 30) {
-            path = document.createElementNS(mwGraphr.SVG_NS, "path");
-            path.setAttribute("d", ["M", x, 0, "l", 0, height].join(" "));
+        for (x = 0; x < graphSize; x += 30) {
+            path = document.createElementNS(graphr.SVG_NS, "path");
+            path.setAttribute("d", ["M", x, 0, "l", 0, graphSize].join(" "));
             path.style.stroke = "#8AF";
             path.style.stroke_width = "1px";
             svg.appendChild(path);
         }
-        for (y = 0; y < height; y += 30) {
-            path = document.createElementNS(mwGraphr.SVG_NS, "path");
-            path.setAttribute("d", ["M", 0, y, "l", width, 0].join(" "));
+        for (y = 0; y < graphSize; y += 30) {
+            path = document.createElementNS(graphr.SVG_NS, "path");
+            path.setAttribute("d", ["M", 0, y, "l", graphSize, 0].join(" "));
             path.style.stroke = "#8AF";
             path.style.stroke_width = "1px";
             svg.appendChild(path);
@@ -119,18 +239,19 @@ mwGraphr.Graph = function (spec) {
         makeNodeSelection();
         rightCell.appendChild(selectionElement);
 
+        makeNavigationMenu();
+        rightCell.appendChild(navigationMenu);
+
         $(spec.placement || document.body).append(table);
     };
 
     
     this.addNodeTypes = function () {
         for (var i = 0; i < arguments.length; i++) {
-            arguments[i].inputs = arguments[i].inputs || [];
-            arguments[i].outputs = arguments[i].outputs || [];
-
             if (arguments[i].terminal) {
                 terminalNodeType = arguments[i];
                 terminalNode = this.addNode({type: terminalNodeType});
+                navigateTo(terminalNode);
             }
 
             nodeTypes[arguments[i].name] = arguments[i];
@@ -140,26 +261,36 @@ mwGraphr.Graph = function (spec) {
 
     this.addNode = function (nodeSpec, offset) {
         nodeSpec.graph = this;
-        var node = new mwGraphr.GraphNode(nodeSpec);
+        var node = new graphr.GraphNode(nodeSpec);
         nodes[node.getId()] = node;
 
+        var $e = $(element);
+        var eOffset = $e.offset();
         if (offset === undefined) {
             offset = {
-                left: $(element).width() / 2,
-                top: $(element).height() / 2
+                left: eOffset.left + $e.width() / 2,
+                top: eOffset.top + $e.height() / 2
             };
         }
 
         var nodeElement = node.getElement();
         $(element).append(nodeElement);
         $(nodeElement).offset(offset);
+        
+        addNavigationOption(node);
 
         return node;
     };
 
     this.removeNode = function (node) {
+        node._remove();
+        this._removeNode(node);
+    };
+
+    this._removeNode = function (node) {
         nodes.mwRemove(node);
         $(node.getElement()).detach();
+        $(navigationMenu).find("[value=" + node.getId() + "]").detach();
     };
 
     this.initEval = function () {
@@ -234,7 +365,7 @@ mwGraphr.Graph = function (spec) {
                     if (nodeData.inputs.hasOwnProperty(inputName)) {
                         inputData = nodeData.inputs[inputName];
 
-                        edge = new mwGraphr.GraphEdge({
+                        edge = new graphr.GraphEdge({
                             start: {
                                 object: nodes[inputData.object],
                                 output: inputData.output
@@ -267,16 +398,17 @@ mwGraphr.Graph = function (spec) {
     var init = function () {
         spec = spec || {};
 
-        if (mwGraphr.Graph.count !== undefined) {
-            mwGraphr.Graph.count++;
+        if (graphr.Graph.count !== undefined) {
+            graphr.Graph.count++;
         } else {
-            mwGraphr.Graph.count = 1;
+            graphr.Graph.count = 1;
         }
 
-        id = mwGraphr.Graph.count;
+        id = graphr.Graph.count;
 
         width = spec.width || 800;
         height = spec.height || 600;
+        graphSize = spec.graphSize || 3000;
 
         makeGraph();
 
@@ -288,16 +420,17 @@ mwGraphr.Graph = function (spec) {
     init();
 };
 
-mwGraphr.GraphNode = function (spec) {
+graphr.GraphNode = function (spec) {
     var that = this;
     var id, graph, type, widget;
     var inputs, outputs, element, inputElements, outputElements;
+    this.local = null;
 
     // Create a list item representing an input
-    var inputLi = function (inputNames) {
+    var inputLi = function (input) {
         var li = document.createElement("li");
-        li.textContent = inputNames[1];
-        inputElements[inputNames[0]] = li;
+        li.textContent = input.displayName;
+        inputElements[input.name] = li;
 
         $(li)
             .data("mwEdgeInput", null)
@@ -310,7 +443,7 @@ mwGraphr.GraphNode = function (spec) {
                         edge.setEnd({
                             element: this,
                             object: that,
-                            input: inputNames[0]
+                            input: input.name
                         });
                     }
                 },
@@ -353,10 +486,10 @@ mwGraphr.GraphNode = function (spec) {
     };
 
     // Create a list item representing an output
-    var outputLi = function (outputNames) {
+    var outputLi = function (output) {
         var li = document.createElement("li");
-        li.textContent = outputNames[1];
-        outputElements[outputNames[0]] = li;
+        li.textContent = output.displayName;
+        outputElements[output.name] = li;
 
         // Dragging an output creates a new edge that can be dropped onto
         // an input.
@@ -366,10 +499,10 @@ mwGraphr.GraphNode = function (spec) {
                 helper: function () {
                     var helper = document.createElement("div");
                     helper.setAttribute("class", "graph-node-dot");
-                    var edge = new mwGraphr.GraphEdge({
+                    var edge = new graphr.GraphEdge({
                         start: {
                             object: that,
-                            output: outputNames[0]
+                            output: output.name
                         },
                         end: {
                             element: helper,
@@ -402,9 +535,11 @@ mwGraphr.GraphNode = function (spec) {
 
         element = document.createElement("div");
         element.setAttribute("class", "graph-node");
-        
+        element.style.position = "absolute";
+
         title = document.createElement("div");
         title.setAttribute("class", "graph-node-title");
+        title.style.backgroundColor = graphr.nodeCategories[type.category];
         title.textContent = type.name;
         element.appendChild(title);
 
@@ -415,7 +550,7 @@ mwGraphr.GraphNode = function (spec) {
             title.appendChild(close);
         }
 
-        if (type.widget !== undefined) {
+        if (type.widget !== null) {
             widget = new type.widget();
             if (spec.widget !== undefined) {
                 widget.setValue(spec.widget);
@@ -437,42 +572,46 @@ mwGraphr.GraphNode = function (spec) {
         }
         element.appendChild(outputs);
 
-        $(element).draggable({
-            handle: ".graph-node-title",
-            containment: "parent",
-            stack: ".graph-node",
-            drag: function (event, ui) {
-                $(this)
-                    .find(".graph-node-inputs li")
-                    .each(function (i) {
-                        var edge = $(this).data("mwEdgeInput");
-                        if (edge) {
-                            edge.update();
-                        }
-                    });
-                $(this)
-                    .find(".graph-node-outputs li")
-                    .each(function (i) {
-                        var edges = $(this).data("mwEdgeOutputs");
-                        for (var j = 0; j < edges.length; j++) {
-                            edges[j].update();
-                        }
-                    });
-            },
-            scroll: true
-        });
+        $(element)
+            .draggable({
+                handle: ".graph-node-title",
+                containment: "parent",
+                scroll: true,
+                stack: ".graph-node",
+                drag: function (event, ui) {
+                    $(this)
+                        .find(".graph-node-inputs li")
+                        .each(function (i) {
+                            var edge = $(this).data("mwEdgeInput");
+                            if (edge) {
+                                edge.update();
+                            }
+                        });
+                    $(this)
+                        .find(".graph-node-outputs li")
+                        .each(function (i) {
+                            var edges = $(this).data("mwEdgeOutputs");
+                            for (var j = 0; j < edges.length; j++) {
+                                edges[j].update();
+                            }
+                        });
+                },
+            })
+            .mousedown(function (event) {
+                event.stopPropagation();
+            });
 
         return element;
     };
 
     var checkInput = function (input) {
-        if (inputs[input] === undefined) {
+        if (!inputs.hasOwnProperty(input)) {
             throw new Error(type.name + " has no input: " + input);
         }
     };
 
     var checkOutput = function (output) {
-        if (outputs[output] === undefined) {
+        if (!outputs.hasOwnProperty(output)) {
             throw new Error(type.name + " has no output: " + output);
         }
     };
@@ -500,6 +639,11 @@ mwGraphr.GraphNode = function (spec) {
     };
 
     this.remove = function () {
+        this._remove();
+        graph._removeNode(this);
+    };
+
+    this._remove = function () {
         var inputName, outputName, i;
         for (inputName in inputs) {
             if (inputs.hasOwnProperty(inputName)
@@ -515,20 +659,22 @@ mwGraphr.GraphNode = function (spec) {
                 }
             }
         }
-        graph.removeNode(this);
     };
 
     this.evaluate = function (global) {
         var inputValues = {}, outputValues;
-        var inputName, input;
-        if (type.widget !== undefined) {
+        var i, inputName, inputType, input;
+        if (type.widget !== null) {
             inputValues.widget = widget.getValue();
         } else {
-            for (inputName in inputs) {
-                if (inputs.hasOwnProperty(inputName)) {
-                    input = inputs[inputName];
+            for (i = 0; i < type.inputs.length; i++) {
+                inputName = type.inputs[i].name;
+                input = inputs[inputName];
+                if (input) {
                     outputValues = input.object.evaluate(global);
                     inputValues[inputName] = outputValues[input.output];
+                } else {
+                    inputValues[inputName] = type.inputs[i].defaultValue;
                 }
             }
         }
@@ -569,7 +715,7 @@ mwGraphr.GraphNode = function (spec) {
             }
         }
 
-        if (type.widget !== undefined) {
+        if (type.widget !== null) {
             data.widget = widget.getValue();
         }
 
@@ -599,13 +745,13 @@ mwGraphr.GraphNode = function (spec) {
     var init = function () {
         var i;
 
-        if (mwGraphr.GraphNode.count !== undefined) {
-            mwGraphr.GraphNode.count++;
+        if (graphr.GraphNode.count !== undefined) {
+            graphr.GraphNode.count++;
         } else {
-            mwGraphr.GraphNode.count = 1;
+            graphr.GraphNode.count = 1;
         }
 
-        id = spec.id || ('id_' + mwGraphr.GraphNode.count);
+        id = spec.id || ('id_' + graphr.GraphNode.count);
 
         graph = spec.graph;
         type = spec.type;
@@ -614,12 +760,12 @@ mwGraphr.GraphNode = function (spec) {
 
         inputs = {};
         for (i = 0; i < type.inputs.length; i++) {
-            inputs[type.inputs[i][0]] = null;
+            inputs[type.inputs[i].name] = null;
         }
 
         outputs = {};
         for (i = 0; i < type.outputs.length; i++) {
-            outputs[type.outputs[i][0]] = [];
+            outputs[type.outputs[i].name] = [];
         }
 
         inputElements = {};
@@ -639,7 +785,7 @@ mwGraphr.GraphNode = function (spec) {
 //                 object: mwGraphNode,
 //                 input: input_name }
 //     spec.graph: mwGraph
-mwGraphr.GraphEdge = function (spec) {
+graphr.GraphEdge = function (spec) {
     var that = this;
     var graph, path, start, end;
 
@@ -741,7 +887,7 @@ mwGraphr.GraphEdge = function (spec) {
     var init = function () {
         graph = spec.graph;
 
-        path = document.createElementNS(mwGraphr.SVG_NS, "path");
+        path = document.createElementNS(graphr.SVG_NS, "path");
         path.style.stroke = "#000";
         path.style.stroke_width = 3;
         path.style.fill = "none";
@@ -761,6 +907,6 @@ mwGraphr.GraphEdge = function (spec) {
     init();
 }
 
-$(mwGraphr.init);
+$(graphr.init);
 
 

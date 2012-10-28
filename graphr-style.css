@@ -11,13 +11,11 @@
 
 .graph {
     background-color: #DDDDFF;
-    width: 800px;
-    height: 600px;
 }
 
 .graph-svg {
-    width: 800px;
-    height: 600px;
+    position: absolute;
+    overflow: hidden;
 }
 
 .graph-node {
@@ -33,7 +31,6 @@
     background-color: #FFAAAA;
     border-top-left-radius: 13px;
     border-top-right-radius: 13px;
-    margin: auto;
     text-align: center;
 }
 
