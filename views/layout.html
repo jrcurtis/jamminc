@@ -1,0 +1,71 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+
+    <title>Jamminc</title>
+
+    <!-- JQuery stuff -->
+    <script src="/jamminc/static/js/jquery/js/jquery-1.8.2.min.js"></script>
+    <script src="/jamminc/static/js/jquery/js/jquery-ui-1.8.24.custom.min.js"></script>
+
+    <!-- Normalize -->
+  <link rel="stylesheet" type="text/css" href="/jamminc/static/css/normalize.css"/>
+
+    <!-- My stuff -->
+    <link rel="stylesheet" type="text/css" href="/jamminc/static/css/site-style.css"/>
+
+    <!-- Other pages' stuff -->
+    {{
+    for file in response.files:
+        if file.endswith('.css'):
+    }}
+            <link rel="stylesheet" type="text/css" href="{{=file}}"/>
+    {{
+        elif file.endswith('.js'):
+    }}
+            <script src="{{=file}}"></script>
+    {{
+        pass
+    pass
+    }}
+  </head>
+
+  <body>
+    <div id="header">
+      <a href="{{= URL('default', 'index') }}"><h1>Jamminc</h1></a>
+
+      <ul id="navigation">
+        <li>
+          <a href="{{= URL('music', 'browse') }}">Browse</a>
+          <ul>
+            <li><a href="{{= URL('music', 'browse', 'songs') }}">Songs</a></li>
+            <li><a href="{{= URL('music', 'browse', 'instruments') }}">Instruments</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="{{= URL('music', 'instrument') }}">Create</a>
+          <ul>
+            <li><a href="{{= URL('music', 'instrument') }}">New song</a></li>
+            <li><a href="{{= URL('music', 'instrument') }}">New instrument</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#">About</a>
+          <ul>
+            <li><a href="#">About Jamminc</a></li>
+            <li><a href="#">Documentation</a></li>
+          </ul>
+      </ul>
+
+      <a href="login" class="login-link">Log in / sign up</a>
+  </div>
+
+   <div id="body">
+     {{include}}
+    </div>
+
+  </body>
+</html>
+

@@ -35,7 +35,7 @@
 }
 
 .graph-node-close {
-    background-image: url('img/x.png');
+    background-image: url('/jamminc/static/images/x.png');
     width: 12px;
     height: 12px;
     display: inline-block;
@@ -54,7 +54,7 @@
 
 .graph-node-inputs li {
     padding-left: 13px;
-    background-image: url('img/dot.png');
+    background-image: url('/jamminc/static/images/dot.png');
     background-position: left;
     background-repeat: no-repeat;
 }
@@ -69,7 +69,7 @@
 
 .graph-node-outputs li {
     padding-right: 13px;
-    background-image: url('img/dot.png');
+    background-image: url('/jamminc/static/images/dot.png');
     background-position: right;
     background-repeat: no-repeat;
 }
@@ -78,14 +78,14 @@
     width: 12px;
     height: 12px;
     display: inline-block;
-    background-image: url('img/dot.png');
+    background-image: url('/jamminc/static/images/dot.png');
 }
 
 .graph-no-dot {
     width: 12px;
     height: 12px;
     display: inline-block;
-    background-image: url('img/no.png');
+    background-image: url('/jamminc/static/images/no.png');
 }
 
 .graph-node-selection {

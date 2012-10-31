@@ -1,0 +1,38 @@
+
+{{ response.files.extend([
+       '/jamminc/static/css/graphr-style.css',
+       '/jamminc/static/css/music-style.css',
+       '/jamminc/static/js/graphr.js',
+       '/jamminc/static/js/wav.js',
+       '/jamminc/static/js/music.js',]) }}
+{{extend 'layout.html'}}
+
+<a href="#">Fork this instrument</a> 
+<a href="#">See instruments based on this instrument</a> 
+<a href="#">See songs using this instrument</a> 
+
+<div id="music-ui"></div>
+<table>
+  <tr>
+    <td>
+      <textarea id="notes" rows="5" cols="10">440 1</textarea>
+    </td>
+    <td>
+      <input id="generate-music" type="button" value="Generate Music"/>
+    </td>
+    <td>
+      <audio id="music-audio" controls></audio>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" rowspan="2">
+      <textarea id="json-field" rows="10" cols="30"></textarea>
+    </td>
+    <td><input id="generate-json" type="button" value="Generate JSON" /></td>
+  </tr>
+  <tr>
+    <td><input id="load-json" type="button" value="Load JSON" /></td>
+  </tr>
+</table>
+  
+  

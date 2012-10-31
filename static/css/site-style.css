@@ -14,7 +14,7 @@ a:hover {
 
 #header {
     border-radius: 5px;
-    background-image: url('img/gradient.png');
+    background-image: url('/jamminc/static/images/gradient.png');
     background-repeat: repeat-x;
     height: 40px;
     line-height: 40px;
@@ -24,7 +24,7 @@ a:hover {
 #header h1 {
     text-indent: -9999px;
     font-size: 1px;
-    background-image: url('img/title.png');
+    background-image: url('/jamminc/static/images/title.png');
     background-repeat: no-repeat;
     height: 30px;
     width: 128px;
@@ -69,6 +69,7 @@ a:hover {
 
 #navigation>li>ul {
     display: none;
+    z-index: 100;
     background-color: #01A60D;
     border-radius: 0px 0px 5px 5px;
     margin: 0px;
@@ -115,7 +116,7 @@ a:hover {
     margin: 0px;
     border-radius: 5px;
     background-color: #01A60D;
-    background-image: url('img/highlight.png');
+    background-image: url('/jamminc/static/images/highlight.png');
     background-repeat: repeat-x;
     background-position: top;
 }
