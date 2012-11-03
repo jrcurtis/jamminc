@@ -90,11 +90,12 @@
 
 .graph-node-selection {
     list-style: none;
-    margin: 10px;
+    margin: 5px;
     padding: 0px;
     overflow-y: auto;
-    min-width: 100px;
-    height: 600px;
+    width: 10em;
+    height: 50%;
+    float: right;
 }
 
 .graph-node-selection>li {

@@ -34,6 +34,10 @@ a:hover {
     vertical-align: middle;
 }
 
+#header h1:hover {
+    background-image: url('/jamminc/static/images/title-down.png');
+}
+
 #header>a.login-link {
     color: #FFF;
     font-size: 0.8em;
@@ -75,7 +79,7 @@ a:hover {
     margin: 0px;
     padding: 5px 10px 5px 10px;
     line-height: 1.5em;
-    width: 10em;
+    white-space: nowrap;
     list-style: none;
     position: absolute;
     left: 0px;
@@ -132,6 +136,7 @@ a:hover {
 #popular>li>h2 {
     font-size: 1.2em;
     margin: 2px 0px;
+    text-shadow: 1px 1px 1px #999;
 }
 
 #popular>li>ol {

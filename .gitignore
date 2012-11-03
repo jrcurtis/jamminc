@@ -3,4 +3,11 @@
 *~
 .DS_Store
 *.psd
+*.pyc
+errors
+databases
+progress.log
+cache
+sessions
+*.bak
 

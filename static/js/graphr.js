@@ -74,7 +74,7 @@ graphr.makeInput = function (displayName, name, defaultValue, widget) {
 //     spec.placement: the DOM element to place the graph in
 graphr.Graph = function (spec) {
     var that = this;
-    var id, width, height, graphSize, table, element, svg, selectionElement,
+    var id, width, height, graphSize, uiContainer, element, svg, selectionElement,
         scrollContainer, navigationMenu;
     var nodes, nodeTypes, terminalNodeType, terminalNode;
 
@@ -92,7 +92,8 @@ graphr.Graph = function (spec) {
     };
 
     var makeNavigationMenu = function () {
-        navigationMenu = $(document.createElement("select"))
+        navigationMenu = document.createElement("select");
+        $(navigationMenu)
             .change(function (event) {
                 $(this)
                     .find("option:selected")
@@ -120,7 +121,6 @@ graphr.Graph = function (spec) {
     var makeNodeSelection = function () {
         selectionElement = document.createElement("ul");
         selectionElement.setAttribute("class", "graph-node-selection");
-        $(element).after(selectionElement);
     };
 
     var addSelectionElements = function () {
@@ -157,20 +157,12 @@ graphr.Graph = function (spec) {
     };
 
     var makeGraph = function () {
-        table = document.createElement("table");
-        table.setAttribute("class", "graph-table");
-        var row = document.createElement("tr");
-        table.appendChild(row);
-        var leftCell = document.createElement("td");
-        row.appendChild(leftCell);
-        var rightCell = document.createElement("td");
-        row.appendChild(rightCell);
+        uiContainer = document.createElement("div");
 
         scrollContainer = document.createElement("div");
-        scrollContainer.style.width = width + "px";
-        scrollContainer.style.height = height + "px";
+        scrollContainer.style.display = "inline-block";
         scrollContainer.style.overflow = "auto";
-        leftCell.appendChild(scrollContainer);
+        uiContainer.appendChild(scrollContainer);
         
         element = document.createElement("div");
         element.setAttribute("class", "graph");
@@ -237,12 +229,34 @@ graphr.Graph = function (spec) {
         }
 
         makeNodeSelection();
-        rightCell.appendChild(selectionElement);
+        uiContainer.appendChild(selectionElement);
 
         makeNavigationMenu();
-        rightCell.appendChild(navigationMenu);
+        uiContainer.appendChild(navigationMenu);
+        navigationMenu.style.display = "inline";
+        navigationMenu.style.cssFloat = "right";
 
-        $(spec.placement || document.body).append(table);
+        var cleaner = document.createElement("div");
+        $(cleaner).css({
+            height: "1px",
+            clear: "both"
+        });
+        uiContainer.appendChild(cleaner);
+
+        var handleResize = function () {
+            var width = $(window).width();
+            var height = $(window).height();
+            var selWidth = $(selectionElement).width();
+            uiContainer.style.width = width + "px";
+            uiContainer.style.height = height + "px";
+            scrollContainer.style.width = (width - selWidth - 20) + "px";
+            scrollContainer.style.height = (height - 20) + "px";
+        };
+
+        $(window).resize(handleResize);
+        handleResize();
+
+        $(spec.placement || document.body).append(uiContainer);
     };
 
     
