@@ -71,6 +71,10 @@ a:hover {
     border-left: 1px solid rgba(0, 0, 0, 0.5);
 }
 
+#navigation>li:first-child {
+    border-left: 1px solid rgba(0, 0, 0, 0);
+}
+
 #navigation>li>ul {
     display: none;
     z-index: 100;
@@ -92,6 +96,7 @@ a:hover {
 }
 
 #navigation>li>ul>li>a {
+    display: block;
     color: #FFF;
     font-size: 0.9em;
 }
@@ -102,6 +107,10 @@ a:hover {
 
 #navigation>li:last-child:hover {
     border-right: 1px solid rgba(0, 0, 0, 0.5);
+}
+
+#navigation>li:first-child:hover {
+    border-left: 1px solid rgba(0, 0, 0, 0.5);
 }
 
 #navigation>li:not(:last-child):hover {

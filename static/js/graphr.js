@@ -74,7 +74,7 @@ graphr.makeInput = function (displayName, name, defaultValue, widget) {
 //     spec.placement: the DOM element to place the graph in
 graphr.Graph = function (spec) {
     var that = this;
-    var id, width, height, graphSize, uiContainer, element, svg, selectionElement,
+    var id, width, height, graphSize, uiContainer, element, svgElement, selectionElement,
         scrollContainer, navigationMenu;
     var nodes, nodeTypes, terminalNodeType, terminalNode;
 
@@ -206,26 +206,34 @@ graphr.Graph = function (spec) {
                 $(this).unbind("mousemove");
             });
 
-        svg = document.createElementNS(graphr.SVG_NS, "svg");
-        svg.setAttribute("class", "graph-svg");
-        svg.style.width = graphSize + "px";
-        svg.style.height = graphSize + "px";
-        element.appendChild(svg);
+        svgElement = document.createElementNS(graphr.SVG_NS, "svg");
+        svgElement.setAttribute("class", "graph-svg");
+        svgElement.style.width = graphSize + "px";
+        svgElement.style.height = graphSize + "px";
+        element.appendChild(svgElement);
 
-        var x, y, path;
-        for (x = 0; x < graphSize; x += 30) {
-            path = document.createElementNS(graphr.SVG_NS, "path");
-            path.setAttribute("d", ["M", x, 0, "l", 0, graphSize].join(" "));
-            path.style.stroke = "#8AF";
-            path.style.stroke_width = "1px";
-            svg.appendChild(path);
-        }
-        for (y = 0; y < graphSize; y += 30) {
-            path = document.createElementNS(graphr.SVG_NS, "path");
-            path.setAttribute("d", ["M", 0, y, "l", graphSize, 0].join(" "));
-            path.style.stroke = "#8AF";
-            path.style.stroke_width = "1px";
-            svg.appendChild(path);
+        var x, y, i, path;
+        for (i = 0; i < graphSize; i += 30) {
+            svgElement.appendChild(new svg.Path({
+                segments: [
+                    new svg.PathSegment({
+                        type: "move",
+                        end: { x: 0, y: i }
+                    }),
+                    new svg.PathSegment({
+                        type: "linear",
+                        end: { x: graphSize, y: i }
+                    }),
+                    new svg.PathSegment({
+                        type: "move",
+                        end: { x: i, y: 0 }
+                    }),
+                    new svg.PathSegment({
+                        type: "linear",
+                        end: { x: i, y: graphSize }
+                    })
+                ]
+            }).css({ stroke: "#8AF" }).element);
         }
 
         makeNodeSelection();
@@ -236,12 +244,12 @@ graphr.Graph = function (spec) {
         navigationMenu.style.display = "inline";
         navigationMenu.style.cssFloat = "right";
 
-        var cleaner = document.createElement("div");
-        $(cleaner).css({
-            height: "1px",
-            clear: "both"
-        });
-        uiContainer.appendChild(cleaner);
+        $(document.createElement("div"))
+            .css({
+                height: "1px",
+                clear: "both"
+            })
+            .appendTo(uiContainer);
 
         var handleResize = function () {
             var width = $(window).width();
@@ -402,7 +410,7 @@ graphr.Graph = function (spec) {
     };
 
     this.getSvg = function () {
-        return svg;
+        return svgElement;
     };
 
     this.getId = function () {
@@ -814,12 +822,10 @@ graphr.GraphEdge = function (spec) {
         p2.top -= origin.top - $(end.element).height() / 2;
         var mid = (p1.left + p2.left) / 2;
 
-        var commands = ["M", p1.left, p1.top,
-                        "C", mid, p1.top,
-                        mid, p2.top,
-                        p2.left, p2.top];
-        
-        path.setAttribute("d", commands.join(" "));
+        path.start = { x: p1.left, y: p1.top };
+        path.control = { x: mid, y: p1.top };
+        path.control2 = { x: mid, y: p2.top };
+        path.end = { x: p2.left, y: p2.top };
     };
 
     // Remove an edge and clean up the node object connections,
@@ -901,11 +907,25 @@ graphr.GraphEdge = function (spec) {
     var init = function () {
         graph = spec.graph;
 
-        path = document.createElementNS(graphr.SVG_NS, "path");
-        path.style.stroke = "#000";
-        path.style.stroke_width = 3;
-        path.style.fill = "none";
-        graph.getSvg().appendChild(path);
+        pathSegment = new svg.PathSegment({
+            type: "cubic",
+            relative: false
+        });
+
+        path = new svg.Path({
+            segments: [
+                new svg.PathSegment({ type: "move" }),
+                new svg.PathSegment({ type: "cubic" })
+            ]
+        });
+
+        path.css({
+            stroke: "#000",
+            strokeWidth: 1,
+            fill: "none"
+        });
+
+        graph.getSvg().appendChild(path.element);
 
         start = spec.start;
         start.element = (start.element
