@@ -3,3 +3,13 @@
 
 }
 
+.music-note {
+    position: absolute;
+    background-color: #494;
+}
+
+.pianoroll {
+    position: relative;
+    background-color: #AAA;
+}
+

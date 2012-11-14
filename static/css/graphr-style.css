@@ -95,7 +95,7 @@
     overflow-y: auto;
     width: 10em;
     height: 50%;
-    float: right;
+    float: left;
 }
 
 .graph-node-selection>li {

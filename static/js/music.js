@@ -1,7 +1,7 @@
 
 var music = {};
 
-music.noteNames = {
+music.noteNumbers = {
     "C": 0,
     "C#": 1,
     "D": 2,
@@ -16,7 +16,7 @@ music.noteNames = {
     "B": 11
 };
 
-music.noteNumbers = {
+music.noteNames = {
     0: "C",
     1: "C#",
     2: "D",
@@ -31,18 +31,49 @@ music.noteNumbers = {
     11: "B"
 };
 
+music.MAX_MIDI_NOTE = 127;
+
 music.log = function (x, base) {
     return Math.log(x) / Math.log(base);
 };
 
-music.frequencyToNote = function (freq) {
+music.frequencyToMidi = function (freq) {
     return 69 + 12 * music.log(freq / 440, 2);
 };
 
-music.noteToFrequency = function (note) {
+music.midiToFrequency = function (note) {
     return 440 * Math.pow(2, (note - 69) / 12);
 };
 
-music.parseNote = function (noteName) {
+// Takes a note in either 
+// Hertz: denoted 440Hz
+// Note name: denoted A#4
+// Or MIDI note number: denoted as a decimal number
+music.parseNote = function (str) {
+    var noteNamePat = /^([A-Ga-g])(#*|b*)(-?\d+)?$/;
+    var frequencyPat = /(\d+)\s*Hz/i;
 
+    var noteLetter, accidentals, octave;
+    var result;
+
+    if ((result = noteNamePat.exec(str)) !== null) {
+        noteLetter = result[1];
+        accidentals = result[2];
+        if (accidentals.charAt(0) === "#") {
+            accidentals = accidentals.length;
+        } else {
+            accidentals = -accidentals.length;
+        }
+        octave = parseInt(result[3], 10) || 4;
+
+        result = music.noteNumbers[noteLetter]
+            + 12 * (octave + 1)
+            + accidentals;
+    } else if ((result = frequencyPat.exec(str)) !== null) {
+        result = music.frequencyToMidi(parseInt(result[1], 10));
+    } else if ((result = parseFloat(str)) === NaN) {
+        result = 69;
+    }
+
+    return result;
 };

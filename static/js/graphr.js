@@ -162,6 +162,7 @@ graphr.Graph = function (spec) {
         scrollContainer = document.createElement("div");
         scrollContainer.style.display = "inline-block";
         scrollContainer.style.overflow = "auto";
+        scrollContainer.style.cssFloat = "left";
         uiContainer.appendChild(scrollContainer);
         
         element = document.createElement("div");
@@ -242,7 +243,7 @@ graphr.Graph = function (spec) {
         makeNavigationMenu();
         uiContainer.appendChild(navigationMenu);
         navigationMenu.style.display = "inline";
-        navigationMenu.style.cssFloat = "right";
+        navigationMenu.style.cssFloat = "left";
 
         $(document.createElement("div"))
             .css({
@@ -257,8 +258,8 @@ graphr.Graph = function (spec) {
             var selWidth = $(selectionElement).width();
             uiContainer.style.width = width + "px";
             uiContainer.style.height = height + "px";
-            scrollContainer.style.width = (width - selWidth - 20) + "px";
-            scrollContainer.style.height = (height - 20) + "px";
+            scrollContainer.style.width = (width - selWidth - 100) + "px";
+            scrollContainer.style.height = (height - 100) + "px";
         };
 
         $(window).resize(handleResize);
@@ -839,7 +840,7 @@ graphr.GraphEdge = function (spec) {
         $(start.element).data("mwEdgeOutputs").mwRemove(this);
         $(end.element).data("mwEdgeInput", null);
 
-        path.parentNode.removeChild(path);
+        path.element.parentNode.removeChild(path.element);
     };
 
     this.setStart = function (newStart) {

@@ -264,7 +264,8 @@ $(function () {
         var i;
         for (i = 0; i < lines.length; i++) {
             line = lines[i].split(" ");
-            notes.push([parseFloat(line[0]), parseFloat(line[1])]);
+            notes.push([music.midiToFrequency(music.parseNote(line[0])),
+                        parseFloat(line[1])]);
         }
         if (!notes) {
             notes.push([440, 1]);
