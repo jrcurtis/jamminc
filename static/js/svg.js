@@ -149,6 +149,7 @@ svg.Path = function (spec) {
     };
 
     var init = function () {
+        spec = spec || {};
         if (spec.segments) {
             that.addSegments.apply(that, spec.segments);
         }

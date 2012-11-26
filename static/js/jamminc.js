@@ -81,6 +81,10 @@ $(function () {
         placement: document.getElementById("music-ui")
     });
 
+    var roll = new pianoroll.PianoRoll({
+        placement: document.getElementById("music-ui")
+    });
+
     graph.addNodeTypes(
         jamminc.makeWaveform(
             "Sine", function (x) { return Math.sin(2 * Math.PI * x); }),

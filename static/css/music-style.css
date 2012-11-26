@@ -11,5 +11,12 @@
 .pianoroll {
     position: relative;
     background-color: #AAA;
+    min-width: 100px;
+}
+
+.pianoroll-svg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 

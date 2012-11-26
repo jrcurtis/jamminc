@@ -52,3 +52,12 @@ mw.arrayBinarySearch = function (arr, elem, key) {
     return null;
 };
 
+mw.fixCoords = function (f) {
+    return function (e) {
+        var offset = $(e.target).offset();
+        e.offsetX = e.pageX - offset.left;
+        e.offsetY = e.pageY - offset.top;
+        return f(e);
+    };
+};
+

@@ -73,6 +73,7 @@ graphr.makeInput = function (displayName, name, defaultValue, widget) {
 // Arguments:
 //     spec.placement: the DOM element to place the graph in
 graphr.Graph = function (spec) {
+    spec = spec || {};
     var that = this;
     var id, width, height, graphSize, uiContainer, element, svgElement, selectionElement,
         scrollContainer, navigationMenu;
@@ -213,30 +214,31 @@ graphr.Graph = function (spec) {
         svgElement.style.height = graphSize + "px";
         element.appendChild(svgElement);
 
-        var x, y, i, path;
+        var x, y, i;
+        var path = new svg.Path();
         for (i = 0; i < graphSize; i += 30) {
-            svgElement.appendChild(new svg.Path({
-                segments: [
-                    new svg.PathSegment({
-                        type: "move",
-                        end: { x: 0, y: i }
-                    }),
-                    new svg.PathSegment({
-                        type: "linear",
-                        end: { x: graphSize, y: i }
-                    }),
-                    new svg.PathSegment({
-                        type: "move",
-                        end: { x: i, y: 0 }
-                    }),
-                    new svg.PathSegment({
-                        type: "linear",
-                        end: { x: i, y: graphSize }
-                    })
-                ]
-            }).css({ stroke: "#8AF" }).element);
+            path.addSegments(
+                new svg.PathSegment({
+                    type: "move",
+                    end: { x: 0, y: i }
+                }),
+                new svg.PathSegment({
+                    type: "linear",
+                    end: { x: graphSize, y: i }
+                }),
+                new svg.PathSegment({
+                    type: "move",
+                    end: { x: i, y: 0 }
+                }),
+                new svg.PathSegment({
+                    type: "linear",
+                    end: { x: i, y: graphSize }
+                }));
         }
 
+        path.css({ stroke: "#8AF" });
+        svgElement.appendChild(path.element);
+            
         makeNodeSelection();
         uiContainer.appendChild(selectionElement);
 
@@ -258,14 +260,14 @@ graphr.Graph = function (spec) {
             var selWidth = $(selectionElement).width();
             uiContainer.style.width = width + "px";
             uiContainer.style.height = height + "px";
-            scrollContainer.style.width = (width - selWidth - 100) + "px";
-            scrollContainer.style.height = (height - 100) + "px";
+            scrollContainer.style.width = (width - selWidth - 80) + "px";
+            scrollContainer.style.height = (height - 50) + "px";
         };
 
         $(window).resize(handleResize);
-        handleResize();
 
         $(spec.placement || document.body).append(uiContainer);
+        handleResize();
     };
 
     
@@ -419,8 +421,6 @@ graphr.Graph = function (spec) {
     };
 
     var init = function () {
-        spec = spec || {};
-
         if (graphr.Graph.count !== undefined) {
             graphr.Graph.count++;
         } else {
