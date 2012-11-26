@@ -75,7 +75,8 @@ graphr.makeInput = function (displayName, name, defaultValue, widget) {
 graphr.Graph = function (spec) {
     spec = spec || {};
     var that = this;
-    var id, width, height, graphSize, uiContainer, element, svgElement, selectionElement,
+    var id, width, height, graphSize;
+    var uiContainer, element, svgElement, selectionElement,
         scrollContainer, navigationMenu;
     var nodes, nodeTypes, terminalNodeType, terminalNode;
 
@@ -115,8 +116,7 @@ graphr.Graph = function (spec) {
         $(navigationMenu)
             .append($(document.createElement("option"))
                     .append(node.getType().name)
-                    .attr("value", node.getId())
-                   );
+                    .attr("value", node.getId()));
     };
 
     var makeNodeSelection = function () {
@@ -157,63 +157,7 @@ graphr.Graph = function (spec) {
         };
     };
 
-    var makeGraph = function () {
-        uiContainer = document.createElement("div");
-
-        scrollContainer = document.createElement("div");
-        scrollContainer.style.display = "inline-block";
-        scrollContainer.style.overflow = "auto";
-        scrollContainer.style.cssFloat = "left";
-        uiContainer.appendChild(scrollContainer);
-        
-        element = document.createElement("div");
-        element.setAttribute("class", "graph");
-        element.style.position = "relative";
-        element.style.width = graphSize + "px";
-        element.style.height = graphSize + "px";
-        scrollContainer.appendChild(element);
-
-        $(element)
-        // Accept nodes being dropped onto the workspace
-            .droppable({
-                accept: ".graph-node-selection li",
-                drop: function (event, ui) {
-                    that.addNode(
-                        { type: ui.helper.data("mwNodeType") },
-                        $(ui.helper).offset());
-                }
-            })
-        // Allow panning around the workspace with the mouse
-            .mousedown(function (event) {
-                if (event.button !== 0) {
-                    return;
-                }
-
-                $(this)
-                    .data("mwLastMousePos",
-                          { x: event.pageX, y: event.pageY })
-                    .bind("mousemove", function (event) {
-                        var $sc = $(scrollContainer);
-                        var lastPos = $(this).data("mwLastMousePos");
-                        var x = $sc.scrollLeft() - event.pageX + lastPos.x;
-                        var y = $sc.scrollTop() - event.pageY + lastPos.y;
-                        $sc
-                            .scrollLeft(x)
-                            .scrollTop(y);
-                        $(this).data("mwLastMousePos",
-                                     { x: event.pageX, y: event.pageY });
-                    });
-            })
-            .mouseup(function (event) {
-                $(this).unbind("mousemove");
-            });
-
-        svgElement = document.createElementNS(graphr.SVG_NS, "svg");
-        svgElement.setAttribute("class", "graph-svg");
-        svgElement.style.width = graphSize + "px";
-        svgElement.style.height = graphSize + "px";
-        element.appendChild(svgElement);
-
+    var makeGrid = function () {
         var x, y, i;
         var path = new svg.Path();
         for (i = 0; i < graphSize; i += 30) {
@@ -238,14 +182,54 @@ graphr.Graph = function (spec) {
 
         path.css({ stroke: "#8AF" });
         svgElement.appendChild(path.element);
-            
-        makeNodeSelection();
-        uiContainer.appendChild(selectionElement);
+    };
 
+    var makeGraph = function () {
+        uiContainer = document.createElement("div");
+
+        element = document.createElement("div");
+        $(element)
+            .attr("class", "graph")
+            .css({
+                position: "relative",
+                width: graphSize,
+                height: graphSize
+            })
+        // Accept nodes being dropped onto the workspace
+            .droppable({
+                accept: ".graph-node-selection li",
+                drop: function (event, ui) {
+                    that.addNode(
+                        { type: ui.helper.data("mwNodeType") },
+                        $(ui.helper).offset());
+                }
+            })
+            .pannable();
+
+        scrollContainer = document.createElement("div");
+        $(scrollContainer)
+            .css({
+                overflow: "auto",
+                cssFloat: "left"
+            })
+            .append(element);
+
+        svgElement = document.createElementNS(graphr.SVG_NS, "svg");
+        svgElement.setAttribute("class", "graph-svg");
+        svgElement.style.width = graphSize + "px";
+        svgElement.style.height = graphSize + "px";
+        element.appendChild(svgElement);
+        makeGrid();
+
+        makeNodeSelection();
         makeNavigationMenu();
-        uiContainer.appendChild(navigationMenu);
-        navigationMenu.style.display = "inline";
-        navigationMenu.style.cssFloat = "left";
+        $(navigationMenu)
+            .css({
+                display: "inline"
+            });
+
+        $(uiContainer)
+            .append(scrollContainer, selectionElement, navigationMenu);
 
         $(document.createElement("div"))
             .css({
@@ -260,7 +244,7 @@ graphr.Graph = function (spec) {
             var selWidth = $(selectionElement).width();
             uiContainer.style.width = width + "px";
             uiContainer.style.height = height + "px";
-            scrollContainer.style.width = (width - selWidth - 80) + "px";
+            scrollContainer.style.width = (width - selWidth - 50) + "px";
             scrollContainer.style.height = (height - 50) + "px";
         };
 

@@ -262,47 +262,52 @@ $(function () {
         })
     );
 
+    graph.deserialize('{"nodes":{"id_1":{"offset":{"top":373,"left":617},"type":"Output","inputs":{"output":{"object":"id_3","output":"signal"}},"outputs":{}},"id_3":{"offset":{"top":373,"left":439},"type":"Sine","inputs":{"freq":{"object":"id_9","output":"note"},"amp":{"object":"id_5","output":"num"},"phase":{"object":"id_7","output":"num"}},"outputs":{"signal":[{"object":"id_1","input":"output"}]}},"id_5":{"offset":{"top":402,"left":251},"type":"Number","inputs":{},"outputs":{"num":[{"object":"id_3","input":"amp"}]},"widget":0.2},"id_7":{"offset":{"top":455,"left":253},"type":"Number","inputs":{},"outputs":{"num":[{"object":"id_3","input":"phase"}]},"widget":0},"id_9":{"offset":{"top":331,"left":294},"type":"Input","inputs":{},"outputs":{"note":[{"object":"id_3","input":"freq"}]}}}}');
+
     $("#generate-music").click(function (event) {
-        var line, lines = document.getElementById("notes").value.split("\n");
-        var notes = [];
-        var i;
-        for (i = 0; i < lines.length; i++) {
-            line = lines[i].split(" ");
-            notes.push([music.midiToFrequency(music.parseNote(line[0])),
-                        parseFloat(line[1])]);
-        }
-        if (!notes) {
-            notes.push([440, 1]);
+        var notes = roll.getNotes();
+        var i, time, maxTime = 0;
+        for (i = 0; i < notes.length; i++) {
+            time = notes[i].time + notes[i].duration;
+            if (time > maxTime) {
+                maxTime = time;
+            }
         }
 
+        var output = [];
         var wav = new mwWAV.WAV();
         var global = {};
         global.time = 0;
-        global.sample = 0;
+        global.sampleI = 0;
         global.lastSample = 0;
         global.wav = wav;
         global.output = [];
 
-        graph.initEval();
-        var sample, note_time = 0;
-        i = 0;
-        while (i < notes.length) {
-            global.note = notes[i][0];
-            note_time += 1 / wav.getSampleRate();
-            if (note_time > notes[i][1]) {
-                note_time = 0;
-                i++;
-            }
+        for (i = 0; i < wav.getSampleRate() * maxTime; i++) {
+            output[i] = 0;
+        }
 
-            sample = graph.evaluate(global);
-            global.output.push(sample);
-            global.lastSample = sample;
-            global.sample++;
-            global.time = global.sample / wav.getSampleRate();
+        graph.initEval();
+        var noteI, sample, sampleI, note_time = 0;
+        for (noteI = 0; noteI < notes.length; noteI++) {
+            global.lastSample = 0;
+            global.output = [];
+            global.note = music.midiToFrequency(notes[noteI].pitch);
+            global.time = 0;
+            sampleI = Math.floor(notes[noteI].time * wav.getSampleRate());
+
+            for (i = 0; i < notes[noteI].duration * wav.getSampleRate(); i++) {
+                global.sampleI = sampleI + i;
+                sample = graph.evaluate(global);
+                global.output.push(sample);
+                output[global.sampleI] += sample;
+                global.lastSample = sample;
+                global.time = i / wav.getSampleRate();
+            }
         }
         graph.haltEval();
 
-        wav.write([global.output]);
+        wav.write([output]);
         var audio = document.getElementById("music-audio");
         audio.setAttribute("src", wav.getDataURI());
         audio.play();

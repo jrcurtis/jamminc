@@ -61,3 +61,72 @@ mw.fixCoords = function (f) {
     };
 };
 
+mw.makeTable = function (rows, colStyles) {
+    colStyles = colStyles || [];
+    var table = document.createElement("table");
+    var row, cell, rowI, colI;
+    for (rowI = 0; rowI < rows.length; rowI++) {
+        row = document.createElement("tr");
+        
+        for (colI = 0; colI < rows[rowI].length; colI++) {
+            cell = document.createElement("td");
+            $(cell)
+                .css(colStyles[colI] || {})
+                .append(rows[rowI][colI])
+                .appendTo(row);
+        }
+
+        $(row).appendTo(table);
+    }
+
+    return table;
+};
+
+mw.makeSelect = function (choices) {
+    var select = document.createElement("select");
+    var i, option;
+    for (i = 0; i < choices.length; i++) {
+        option = document.createElement("option");
+        if (Array.isArray(choices[i])) {
+            option.textContent = choices[i][0];
+            option.value = choices[i][1];
+        } else {
+            option.textContent = option.value = choices[i];
+        }
+        select.appendChild(option);
+    }
+    return select;
+};
+
+(function ($) {
+    $.fn.pannable = function () {
+        return (this
+        // Allow panning around the workspace with the mouse
+            .mousedown(function (event) {
+                if (event.button !== 0) {
+                    return;
+                }
+
+                var parent = $(this).parent();
+                $(this)
+                    .data("mwLastMousePos",
+                          { x: event.pageX, y: event.pageY })
+                    .bind("mousemove", function (event) {
+                        var lastPos = $(this).data("mwLastMousePos");
+                        var x = parent.scrollLeft() - event.pageX + lastPos.x;
+                        var y = parent.scrollTop() - event.pageY + lastPos.y;
+                        parent
+                            .scrollLeft(x)
+                            .scrollTop(y);
+                        $(this).data("mwLastMousePos",
+                                     { x: event.pageX, y: event.pageY });
+                    });
+            })
+            .mouseup(function (event) {
+                $(this).unbind("mousemove");
+            }));
+    };
+
+})(jQuery);
+
+
