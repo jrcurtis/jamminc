@@ -320,5 +320,13 @@ $(function () {
     $("#load-json").click(function (event) {
         graph.deserialize($("#json-field").attr("value"));
     });
+
+    $("#pianoroll-generate-json").click(function (event) {
+        $("#pianoroll-json-field").attr("value", roll.serialize());
+    });
+
+    $("#pianoroll-load-json").click(function (event) {
+        roll.deserialize($("#pianoroll-json-field").attr("value"));
+    });
 });
 

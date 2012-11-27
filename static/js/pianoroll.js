@@ -14,11 +14,41 @@ pianoroll.PianoRoll = function (spec) {
     var notePadding = 3;
 
     var element, svgElement;
-    var noteRows, noteElements, currentNote;
+    var notes, noteElements;
+    var trackName, instrument, volume, pan;
+    var trackNameInput, instrumentSelect, volumeSlider, panSlider;
 
     Object.defineProperties(this, {
         element: {
             get: function () { return element; }
+        },
+        trackName: {
+            get: function () { return trackName; },
+            set: function (name) {
+                trackName = name;
+                $(trackNameInput).attr("value", name);
+            }
+        },
+        instrument: {
+            get: function () { return instrument; },
+            set: function (inst) {
+                instrument = inst;
+                $(instrumentSelect).attr("value", inst);
+            }
+        },
+        volume: {
+            get: function () { return volume; },
+            set: function (vol) {
+                volume = vol;
+                $(volumeSlider).slider("value", vol);
+            }
+        },
+        pan: {
+            get: function () { return pan; },
+            set: function (p) {
+                pan = p;
+                $(panSlider).slider("value", p);
+            }
         }
     });
 
@@ -51,12 +81,6 @@ pianoroll.PianoRoll = function (spec) {
         } else {
             return 0;
         }
-    };
-
-    var findNote = function (midiNote, time) {
-        var tempNote = new pianoroll.Note(midiNote, time, 0);
-        
-        return mw.arrayBinarySearch(noteRows[midiNote], tempNote, cmpNote);
     };
 
     var makeGrid = function () {
@@ -94,31 +118,43 @@ pianoroll.PianoRoll = function (spec) {
             })
             .click(mw.fixCoords(handleClick));
 
-        var trackName = document.createElement("input");
-        $(trackName)
+        trackNameInput = document.createElement("input");
+        $(trackNameInput)
             .attr({
                 "type": "text",
                 "size": 10
-            });
-        var instrumentSelect = mw.makeSelect(["inst1", "funky"]);
-        var volumeSlider = document.createElement("div");
+            })
+            .change(function () { trackName = trackNameInput.value; });
+
+        instrumentSelect = mw.makeSelect(["inst1", "funky"]);
+        $(instrumentSelect)
+            .change(function () { instrument = instrumentSelect.value; });
+
+        volumeSlider = document.createElement("div");
         $(volumeSlider)
             .slider({
                 min: 0,
                 max: 1,
                 value: 1,
-                step: 0.05
+                step: 0.05,
+                change: function () {
+                    volume = $(volumeSlider).slider("value");
+                }
             });
-        var panSlider = document.createElement("div");
+
+        panSlider = document.createElement("div");
         $(panSlider)
             .slider({
                 min: -1,
                 max: 1,
-                step: 0.1
+                step: 0.1,
+                change: function () {
+                    pan = $(panSlider).slider("value");
+                }
             });
 
         var settingsTable = mw.makeTable(
-            [["Name", trackName],
+            [["Name", trackNameInput],
              ["Instrument", instrumentSelect],
              ["Volume", volumeSlider],
              ["Pan", panSlider]],
@@ -196,8 +232,10 @@ pianoroll.PianoRoll = function (spec) {
                 position: "absolute"
             })
             .mousedown(function (e) { e.stopPropagation(); })
+            .click(function (e) { e.stopPropagation(); })
             .dblclick(function (e) {
                 that.removeNote($(this).data("pianorollNote"));
+                e.stopPropagation();
             })
             .resizable({
                 containment: "parent",
@@ -211,44 +249,77 @@ pianoroll.PianoRoll = function (spec) {
             })
             .get(0);
 
-        noteRows[note.pitch].push(note);
+        notes.push(note);
         noteElements.push(note.element);
         $(element).append(note.element);
     };
 
     this.removeNote = function (note) {
         $(note.element).detach();
-        mw.arrayRemove(noteRows[note.pitch], note);
+        mw.arrayRemove(notes, note);
         mw.arrayRemove(noteElements, note.element);
     };
 
     this.getNotes = function () {
-        var notes = [];
+        var rnotes = [];
 
-        var pitch, i;
-        for (pitch = 0; pitch < music.MAX_MIDI_NOTE; pitch++) {
-            for (i = 0; i < noteRows[pitch].length; i++) {
-                notes.push(noteRows[pitch][i]);
-            }
+        var i;
+        for (i = 0; i < notes.length; i++) {
+            rnotes.push(notes[i]);
         }
 
-        notes.sort(cmpNote);
+        rnotes.sort(cmpNote);
 
-        return notes;
+        return rnotes;
+    };
+
+    this.serialize = function () {
+        var data = {};
+
+        data.trackName = trackName;
+        data.instrument = instrument;
+        data.volume = volume;
+        data.pan = pan;
+
+        data.notes = [];
+        var i, note;
+        for (i = 0; i < notes.length; i++) {
+            note = notes[i];
+            data.notes.push({
+                pitch: note.pitch,
+                time: note.time,
+                duration: note.duration
+            });
+        }
+
+        return JSON.stringify(data);
+    };
+
+    this.deserialize = function (data) {
+        data = JSON.parse(data);
+
+        that.trackName = data.trackName;
+        that.instrument = data.instrument;
+        that.volume = data.volume;
+        that.pan = data.pan;
+
+        notes = [];
+        var i;
+        for (i = 0; i < data.notes.length; i++) {
+            that.addNote(data.notes[i]);
+        }
     };
 
     var init = function () {
         makeUI();
 
-        noteRows = [];
-        var n;
-        for (n = 0; n <= music.MAX_MIDI_NOTE; n++) {
-            noteRows.push([]);
-        }
+        that.trackName = "track";
+        that.instrument = 1;
+        that.volume = 1;
+        that.pan = 0;
 
+        notes = [];
         noteElements = [];
-
-        currentNote = null;
     };
     init();
 };
