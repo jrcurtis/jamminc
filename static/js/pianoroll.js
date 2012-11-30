@@ -13,14 +13,14 @@ pianoroll.PianoRoll = function (spec) {
     var beatsPerMeasure = 4;
     var notePadding = 3;
 
-    var element, svgElement;
+    var uiContainer, element, svgElement;
     var notes, noteElements;
     var trackName, instrument, volume, pan;
     var trackNameInput, instrumentSelect, volumeSlider, panSlider;
 
     Object.defineProperties(this, {
         element: {
-            get: function () { return element; }
+            get: function () { return uiContainer; }
         },
         trackName: {
             get: function () { return trackName; },
@@ -184,13 +184,15 @@ pianoroll.PianoRoll = function (spec) {
             .css({ paddingLeft: settingsWidth + 10 })
             .append(scrollContainer);
 
-        var container = document.createElement("div");
-        $(container)
+        uiContainer = document.createElement("div");
+        $(uiContainer)
             .append(settingsContainer, scrollContainerContainer);
 
         makeGrid();
 
-        $(spec.placement || document.body).append(container);
+        if (spec.placement) {
+            $(spec.placement).append(container);
+        }
     };
 
     var handleClick = function (event) {

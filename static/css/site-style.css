@@ -12,6 +12,30 @@ a:hover {
     text-decoration: underline;
 }
 
+.flash {
+    position: fixed;
+    right: 0px;
+    top: 0px;
+    padding: 10px;
+    margin-right: 10px;
+    min-width: 200px;
+    background-color: #EE8;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    z-index: 100;
+}
+
+.flash .close {
+    color: #FFF;
+    background-color: #F00;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    margin-left: 5px;
+    float: right;
+    text-align: center;
+}
+
 #header {
     border-radius: 5px;
     background-image: url('/jamminc/static/images/gradient.png');

@@ -12,39 +12,33 @@
 
 {{extend 'layout.html'}}
 
-<a href="#">Fork this instrument</a> 
-<a href="#">See instruments based on this instrument</a> 
-<a href="#">See songs using this instrument</a> 
+<div>
+  <a href="#">Fork this instrument</a> 
+  <a href="#">See instruments based on this instrument</a> 
+  <a href="#">See songs using this instrument</a> 
+</div>
 
-<input id="save-instrument" type="button" value="save"/>
-<div id="music-ui"></div>
-<table>
-  <tr>
-    <td>
-      <input id="generate-music" type="button" value="Generate Music"/>
-    </td>
-    <td>
-      <audio id="music-audio" controls></audio>
-    </td>
-  </tr>
-  <tr>
-    <td rowspan="2">
-      <textarea id="json-field" rows="10" cols="30"></textarea>
-    </td>
-    <td><input id="generate-json" type="button" value="Generate JSON" /></td>
-  </tr>
-  <tr>
-    <td><input id="load-json" type="button" value="Load JSON" /></td>
-  </tr>
-  <tr>
-    <td rowspan="2">
-      <textarea id="pianoroll-json-field" rows="10" cols="30"></textarea>
-    </td>
-    <td><input id="pianoroll-generate-json" type="button" value="Generate Piano Roll JSON" /></td>
-  </tr>
-  <tr>
-    <td><input id="pianoroll-load-json" type="button" value="Load Piano Roll JSON" /></td>
-  </tr>
-</table>
+<div>
+  <input id="new-song" type="button" value="New song"/>
+  <input id="save-song" type="button" value="Save song"/>
+  <input id="play-song" type="button" value="Play song"/>
+  <audio id="music-audio" controls></audio>
+</div>
+
+<div>
+  <input id="new-instrument" type="button" value="New instrument"/>
+  <input id="save-instrument" type="button" value="Save instrument"/>
+</div>
+
+<div>
+  <input id="instrument-name" type="text"/>
+</div>
+<div id="instrument-ui"></div>
+
+<div>
+  <input id="new-track" type="button" value="New track"/>
+</div>
+<ul id="tracks-ui"></ul>
+
   
   

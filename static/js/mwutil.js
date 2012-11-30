@@ -98,6 +98,36 @@ mw.makeSelect = function (choices) {
     return select;
 };
 
+mw.flash = function (message) {
+    var flash = jQuery('.flash');
+    flash.hide();
+    flash.html(message).append('<span class="close">&times;</span>').slideDown();
+};
+
+// property: {
+//     name: "prop_name",
+//     element: dom_element,
+// }
+mw.synchronize = function (object, properties) {
+    var i, prop;
+    var bindProp = function (p, f) {
+        return function () { f(p); };
+    };
+    for (i = 0; i < properties.length; i++) {
+        prop = properties[i];
+        
+        if (prop.element.nodeName == "input") {
+            $(prop.element).change(
+                bindProp(prop, function (prop) {
+                    object[prop.name] = prop.element.value;
+                })
+            );
+        } else if (prop.element.classList.indexOf("ui-slider") >= 0) {
+            
+        }
+    }
+};
+
 (function ($) {
     $.fn.pannable = function () {
         return (this

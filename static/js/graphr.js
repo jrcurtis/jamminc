@@ -72,6 +72,7 @@ graphr.makeInput = function (displayName, name, defaultValue, widget) {
 
 // Arguments:
 //     spec.placement: the DOM element to place the graph in
+//     spec.nodeTypes: The node types to be added to the graph
 graphr.Graph = function (spec) {
     spec = spec || {};
     var that = this;
@@ -250,20 +251,22 @@ graphr.Graph = function (spec) {
 
         $(window).resize(handleResize);
 
-        $(spec.placement || document.body).append(uiContainer);
+        if (spec.placement) {
+            $(spec.placement).append(uiContainer);
+        }
         handleResize();
     };
 
     
-    this.addNodeTypes = function () {
-        for (var i = 0; i < arguments.length; i++) {
-            if (arguments[i].terminal) {
-                terminalNodeType = arguments[i];
+    this.addNodeTypes = function (types) {
+        for (var i = 0; i < types.length; i++) {
+            if (types[i].terminal) {
+                terminalNodeType = types[i];
                 terminalNode = this.addNode({type: terminalNodeType});
                 navigateTo(terminalNode);
             }
 
-            nodeTypes[arguments[i].name] = arguments[i];
+            nodeTypes[types[i].name] = types[i];
         }
         addSelectionElements();
     };
@@ -393,7 +396,7 @@ graphr.Graph = function (spec) {
     };
 
     this.getElement = function () {
-        return table;
+        return uiContainer;
     };
 
     this.getSvg = function () {
@@ -423,6 +426,10 @@ graphr.Graph = function (spec) {
         nodes = [];
         terminalNodeType = null;
         terminalNode = null;
+
+        if (spec.nodeTypes) {
+            that.addNodeTypes(spec.nodeTypes);
+        }
     };
     init();
 };

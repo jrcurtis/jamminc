@@ -17,7 +17,8 @@ db.define_table(
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
     Field('instrument', 'reference instruments'),
-    Field('song', 'reference songs', required=True))
+    Field('song', 'reference songs', required=True),
+    Field('created', 'datetime', default=request.utcnow))
 
 db.define_table(
     'songs',
