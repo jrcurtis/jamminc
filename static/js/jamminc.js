@@ -328,5 +328,18 @@ $(function () {
     $("#pianoroll-load-json").click(function (event) {
         roll.deserialize($("#pianoroll-json-field").attr("value"));
     });
+
+    $("#save-instrument").click(function (event) {
+        console.log("Sending save request");
+        $.ajax({
+            url: '/jamminc/music/instrument.json',
+            type: "POST",
+            data: { name: "my instrument", data: graph.serialize() },
+            success: function (data, textStatus, jqXHR) {
+                console.log("Save request complete: " + JSON.stringify(data));
+            }
+            
+        });
+    });
 });
 
