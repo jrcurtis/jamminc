@@ -296,7 +296,7 @@ jamminc.Instrument = function (spec) {
                 if (data.error) {
                     mw.flash("Instrument couldn't be created: " + data.error);
                 } else {
-                    id = data.id;
+                    id = data.inst_id;
                     mw.flash("New instrument created");
                 }
             }
@@ -359,6 +359,7 @@ jamminc.Instrument = function (spec) {
             that.load();
         } else {
             that.create();
+            graph.deserialize(jamminc.defaultInstrument);
         }
     };
     init();
@@ -393,7 +394,7 @@ jamminc.Track = function (spec) {
             }
         }
 
-        var graph = roll.
+        var graph = roll.instrument;
         var output = [];
         var global = {};
         global.time = 0;
@@ -435,14 +436,14 @@ jamminc.Track = function (spec) {
             type: "POST",
             data: {
                 song_id: song.id,
-                name: roll.name,
+                name: roll.trackName,
                 data: roll.serialize()
             },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Track couldn't be created: " + data.error);
                 } else {
-                    id = data.id;
+                    id = data.track_id;
                     mw.flash("New track created");
                 }
             }
@@ -472,7 +473,7 @@ jamminc.Track = function (spec) {
             type: "PUT",
             data: {
                 track_id: id,
-                name: roll.name,
+                name: roll.trackName,
                 data: roll.serialize()
             },
             success: function (data, textStatus, jqXHR) {
@@ -497,7 +498,7 @@ jamminc.Track = function (spec) {
     };
 
     var init = function () {
-        roll = new pianoroll.PianoRoll();
+        roll = new pianoroll.PianoRoll({ instruments: [["Bass", 1], ["Lead", 2], ["Funk", 3]] });
 
         song = spec.song;
         id = spec.id || 0;
@@ -557,7 +558,7 @@ jamminc.Song = function (spec) {
                 if (data.error) {
                     mw.flash("Song couldn't be created: " + data.error);
                 } else {
-                    id = data.id;
+                    id = data.song_id;
                     mw.flash("New song created");
                 }
             }
@@ -593,7 +594,7 @@ jamminc.Song = function (spec) {
         $.ajax({
             url: API_URL,
             type: "PUT",
-            data: { inst_id: id, name: name },
+            data: { song_id: id, name: name },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't save song: " + data.error);
@@ -649,6 +650,9 @@ jamminc.Song = function (spec) {
                 .append(track.element)
                 .appendTo("#tracks-ui");
         });
+
+        $("#save-song").click(function () { that.save(); });
+        $("#save-instrument").click(function () { if (curInstrument) { curInstrument.save(); } });
     };
     init();
 };

@@ -3,6 +3,8 @@ pianoroll = {};
 
 pianoroll.SVG_NS = "http://www.w3.org/2000/svg";
 
+// spec.placement = where should this be put?
+// spec.instruments = [[inst_name, inst_id], ...]
 pianoroll.PianoRoll = function (spec) {
     spec = spec || {};
     var that = this;
@@ -15,7 +17,7 @@ pianoroll.PianoRoll = function (spec) {
 
     var uiContainer, element, svgElement;
     var notes, noteElements;
-    var trackName, instrument, volume, pan;
+    var trackName, instrument, instruments, volume, pan;
     var trackNameInput, instrumentSelect, volumeSlider, panSlider;
 
     Object.defineProperties(this, {
@@ -126,7 +128,7 @@ pianoroll.PianoRoll = function (spec) {
             })
             .change(function () { trackName = trackNameInput.value; });
 
-        instrumentSelect = mw.makeSelect(["inst1", "funky"]);
+        instrumentSelect = mw.makeSelect(instruments);
         $(instrumentSelect)
             .change(function () { instrument = instrumentSelect.value; });
 
@@ -313,6 +315,8 @@ pianoroll.PianoRoll = function (spec) {
     };
 
     var init = function () {
+        instruments = spec.instruments || [];
+
         makeUI();
 
         that.trackName = "track";
