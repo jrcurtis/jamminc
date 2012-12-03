@@ -59,15 +59,20 @@
           [['Browse', False, URL('music', 'browse'),
                [['Songs', False, URL('music', 'browse', args=['songs'])],
                 ['Instruments', False, URL('music', 'browse', args=['instruments'])]]],
-           ['Create', False, URL('music', 'edit'),
-               [['New song', False, URL('music', 'edit')],
-                ['New instrument', False, URL('music', 'edit')]]],
+           ['Create', False, URL('music', 'index'),
+               [['New song', False, URL('music', 'edit', args=['song'])],
+                ['New instrument', False, URL('music', 'edit', args=['instrument'])]]],
            ['About', False, URL('index'),
                [['About Jamminc', False, URL('index')],
-                ['Documentation', False, URL('index')]]]],
+                ['Documentation', False, URL('index')],
+                ['News', False, URL('default', 'news')]]]],
           _id='navigation')}}
-          
-      <a href="{{= URL('default', 'user') }}" class="login-link">Log in / sign up</a>
+
+      {{ if auth.user: }}
+          <a href="{{= URL('default', 'user', args=['logout']) }}" class="login-link">Log out</a>
+      {{ else: }}
+          <a href="{{= URL('default', 'user') }}" class="login-link">Log in / sign up</a>
+      {{ pass }}
   </div>
 
    <div id="body">

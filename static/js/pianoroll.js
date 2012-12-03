@@ -1,7 +1,25 @@
 
 pianoroll = {};
 
-pianoroll.SVG_NS = "http://www.w3.org/2000/svg";
+pianoroll.noteIcons = (function () {
+    var list = document.createElement("ol");
+    $(list).attr("class", "note-icon-list");
+    var li, i, name;
+    for (i = music.MAX_MIDI_NOTE; i >= 0; i--) {
+        name = music.noteName(i);
+        if (name === "C") {
+            name += i / 12;
+        }
+        li = document.createElement("li");
+        $(li)
+            .text(name)
+            .appendTo(list);
+        if (name.indexOf("#") >= 0) {
+            $(li).attr("class", "black-note");
+        }
+    }
+    return list;
+})();
 
 // spec.placement = where should this be put?
 // spec.instruments = [[inst_name, inst_id], ...]
@@ -14,42 +32,22 @@ pianoroll.PianoRoll = function (spec) {
     var beatsPerMinute = 120;
     var beatsPerMeasure = 4;
     var notePadding = 3;
+    var trackLength = 60;
 
-    var uiContainer, element, svgElement;
-    var notes, noteElements;
-    var trackName, instrument, instruments, volume, pan;
+    var uiContainer, element, svgElement, scrollContainer, scaleContainer;
+    var notes, noteElements, noteIcons;
+    var instruments;
     var trackNameInput, instrumentSelect, volumeSlider, panSlider;
 
     Object.defineProperties(this, {
         element: {
             get: function () { return uiContainer; }
         },
-        trackName: {
-            get: function () { return trackName; },
-            set: function (name) {
-                trackName = name;
-                $(trackNameInput).attr("value", name);
-            }
-        },
-        instrument: {
-            get: function () { return instrument; },
-            set: function (inst) {
-                instrument = inst;
-                $(instrumentSelect).attr("value", inst);
-            }
-        },
-        volume: {
-            get: function () { return volume; },
-            set: function (vol) {
-                volume = vol;
-                $(volumeSlider).slider("value", vol);
-            }
-        },
-        pan: {
-            get: function () { return pan; },
-            set: function (p) {
-                pan = p;
-                $(panSlider).slider("value", p);
+        instruments: {
+            get: function () { return instruments; },
+            set: function (is) {
+                instruments = is;
+                mw.fillSelect(instrumentSelect, instruments);
             }
         }
     });
@@ -64,7 +62,7 @@ pianoroll.PianoRoll = function (spec) {
     };
 
     var screenToTime = function (x) {
-        return x / beatWidth / beatsPerMinute * 60;
+        return (x - beatWidth) / beatWidth / beatsPerMinute * 60;
     };
 
     var timeToScreen = function (t) {
@@ -100,7 +98,7 @@ pianoroll.PianoRoll = function (spec) {
                 new svg.PathSegment({
                     type: "linear",
                     relative: true,
-                    end: { x: 1000, y: 0 }
+                    end: { x: timeToScreen(trackLength), y: 0 }
                 })
             );
         }
@@ -116,20 +114,19 @@ pianoroll.PianoRoll = function (spec) {
             .css({
                 height: (music.MAX_MIDI_NOTE
                          * (noteHeight + notePadding)) + "px",
-                width: timeToScreen(60),
+                width: timeToScreen(trackLength),
             })
             .click(mw.fixCoords(handleClick));
 
         trackNameInput = document.createElement("input");
         $(trackNameInput)
-            .attr({
-                "type": "text",
-                "size": 10
-            })
+            .attr({ type: "text" })
+            .css({ width: "90%" })
             .change(function () { trackName = trackNameInput.value; });
 
-        instrumentSelect = mw.makeSelect(instruments);
+        instrumentSelect = mw.makeSelect([]);
         $(instrumentSelect)
+            .css({ width: "90%" })
             .change(function () { instrument = instrumentSelect.value; });
 
         volumeSlider = document.createElement("div");
@@ -155,6 +152,13 @@ pianoroll.PianoRoll = function (spec) {
                 }
             });
 
+        mw.synchronize(that, {
+            trackName: trackNameInput,
+            instrument: instrumentSelect,
+            volume: volumeSlider,
+            pan: panSlider
+        });
+
         var settingsTable = mw.makeTable(
             [["Name", trackNameInput],
              ["Instrument", instrumentSelect],
@@ -173,22 +177,36 @@ pianoroll.PianoRoll = function (spec) {
             })
             .append(settingsTable);
 
-        var scrollContainer = document.createElement("div");
+        noteIcons = $(pianoroll.noteIcons)
+            .clone()
+            .appendTo(element)
+            .get(0);
+
+        scrollContainer = document.createElement("div");
         $(scrollContainer)
             .css({
                 overflow: "scroll",
                 height: (12 * (noteHeight + notePadding)) + "px"
             })
-            .append(element);
+            .append(element)
+            .scroll(function (event) {
+                var left = $(scrollContainer).scrollLeft();
+                var opacity = left > 0 ? 0.5 : 1;
+                $(noteIcons)
+                    .css({
+                        left: left,
+                        opacity: opacity
+                    });
+            });
 
-        var scrollContainerContainer = document.createElement("div");
-        $(scrollContainerContainer)
+        scaleContainer = document.createElement("div");
+        $(scaleContainer)
             .css({ paddingLeft: settingsWidth + 10 })
             .append(scrollContainer);
 
         uiContainer = document.createElement("div");
         $(uiContainer)
-            .append(settingsContainer, scrollContainerContainer);
+            .append(settingsContainer, scaleContainer);
 
         makeGrid();
 
@@ -202,10 +220,8 @@ pianoroll.PianoRoll = function (spec) {
             return;
         }
 
-        console.log(event);
         var midiNote = screenToMidiNote(event.offsetY);
         var time = screenToTime(event.offsetX);
-        console.log("DWN", "x", event.offsetX, "y", event.offsetY, "note", midiNote, "t", time);
 
         currentNote = new pianoroll.Note(midiNote, time, 1);
         that.addNote(currentNote);
@@ -223,7 +239,6 @@ pianoroll.PianoRoll = function (spec) {
         var top = midiNoteToScreen(note.pitch);
         var left = timeToScreen(note.time);
         var width = timeToScreen(note.duration);
-        console.log("ADD", "x", left, "y", top, "note", note.pitch, "t", note.time);
 
         note.element = $(document.createElement("div"))
             .data("pianorollNote", note)
@@ -258,6 +273,25 @@ pianoroll.PianoRoll = function (spec) {
         $(element).append(note.element);
     };
 
+    this.update = function () {
+        var firstNote, i;
+        if (notes.length > 0) {
+            firstNote = notes[0];
+            for (i = 1; i < notes.length; i++) {
+                if (notes[i].time < firstNote.time) {
+                    firstNote = notes[i];
+                }
+            }
+            $(scrollContainer)
+                .scrollTop(midiNoteToScreen(firstNote.pitch)
+                           - $(scrollContainer).height() / 2)
+                .scrollLeft(timeToScreen(firstNote.time)
+                            - beatWidth);
+        } else {
+            $(scrollContainer).scrollTop($(element).height() / 2);
+        }
+    };
+
     this.removeNote = function (note) {
         $(note.element).detach();
         mw.arrayRemove(notes, note);
@@ -280,10 +314,10 @@ pianoroll.PianoRoll = function (spec) {
     this.serialize = function () {
         var data = {};
 
-        data.trackName = trackName;
-        data.instrument = instrument;
-        data.volume = volume;
-        data.pan = pan;
+        data.trackName = that.trackName;
+        data.instrument = that.instrument;
+        data.volume = that.volume;
+        data.pan = that.pan;
 
         data.notes = [];
         var i, note;
@@ -315,10 +349,9 @@ pianoroll.PianoRoll = function (spec) {
     };
 
     var init = function () {
-        instruments = spec.instruments || [];
-
         makeUI();
 
+        that.instruments = spec.instruments || [];
         that.trackName = "track";
         that.instrument = 1;
         that.volume = 1;

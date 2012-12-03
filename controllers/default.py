@@ -38,6 +38,11 @@ def user():
     """
     return dict(form=auth())
 
+def profile():
+    return {}
+
+def news():
+    return {}
 
 def download():
     """

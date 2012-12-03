@@ -1,9 +1,57 @@
 
+def index():
+    return {
+        'songs': db(db.songs.author == auth.user_id).select(
+            db.songs.id, db.songs.name,
+            orderby=db.songs.rating,
+            limitby=(0, 10)),
+        'instruments': db(db.instruments.author == auth.user_id).select(
+            db.instruments.id, db.instruments.name,
+            orderby=db.instruments.rating,
+            limitby=(0, 10)),
+        }
+
 def edit():
-    return {}
+    return_data = {
+        'song_id': '',
+        'inst_id': '',
+        }
+
+    if len(request.args) == 0:
+        redirect(URL('music', 'edit', args=['song']))
+
+    elif len(request.args) == 1:
+        if request.args[0] == 'song':
+            return_data['song_id'] = 'new'
+        elif request.args[0] == 'instrument':
+            return_data['inst_id'] = 'new'
+        else:
+            raise HTTP(404)
+
+    elif len(request.args) == 2:
+        if request.args[0] == 'song':
+            return_data['song_id'] = request.args[1]
+        elif request.args[0] == 'instrument':
+            return_data['inst_id'] = request.args[1]
+        else:
+            raise HTTP(404)
+
+    else:
+        raise HTTP(404)
+
+    return return_data
 
 def browse():
-    return {}
+    return {
+        'songs': db(db.songs.author == db.auth_user.id).select(
+            db.songs.id, db.songs.name, db.songs.author, db.auth_user.username,
+            orderby=db.songs.rating,
+            limitby=(0, 10)),
+        'instruments': db(db.instruments.author == db.auth_user.id).select(
+            db.instruments.id, db.instruments.name, db.instruments.author, db.auth_user.username,
+            orderby=db.instruments.rating,
+            limitby=(0, 10)),
+        }
 
 @request.restful()
 def instrument():
@@ -13,10 +61,10 @@ def instrument():
         inst = db.instruments[inst_id]
 
         if inst is not None:
-            return_data.name = inst.name
-            return_data.data = inst.data
+            return_data['name'] = inst.name
+            return_data['data'] = inst.data
         else:
-            return_data.error = 'No such instrument'
+            return_data['error'] = 'No such instrument'
 
         return return_data
 
@@ -74,6 +122,25 @@ def instrument():
     return locals()
 
 @request.restful()
+def instruments():
+    def GET():
+        instruments_query = db.instruments.author == auth.user_id
+        favorites_query = (
+            (db.favorite_instruments.user == auth.user_id)
+            & (db.favorite_instruments.instrument == db.instruments.id))
+
+        instruments = db(instruments_query).select(
+            db.instruments.id, db.instruments.name).as_list()
+        instruments += db(favorites_query).select(
+            db.instruments.id, db.instruments.name).as_list()
+
+        return {
+            'instruments': map(lambda r: [r['name'], r['id']], instruments)
+            }
+
+    return locals()
+
+@request.restful()
 def track():
     def GET(track_id):
         return_data = {}
@@ -81,10 +148,10 @@ def track():
         track = db.tracks[track_id]
 
         if track is not None:
-            return_data.name = track.name
-            return_data.data = track.data
+            return_data['name'] = track.name
+            return_data['data'] = track.data
         else:
-            return_data.error = 'No such track'
+            return_data['error'] = 'No such track'
 
         return return_data
 
@@ -149,10 +216,12 @@ def song():
         song = db.songs[song_id]
 
         if song is not None:
-            return_data.name = song.name
-            return_data.data = song.data
+            return_data['name'] = song.name
+            tracks_query = db.tracks.song == song_id
+            tracks = db(tracks_query).select(db.tracks.id)
+            return_data['tracks'] = map(lambda r: r['id'], tracks.as_list())
         else:
-            return_data.error = 'No such song'
+            return_data['error'] = 'No such song'
 
         return return_data
 

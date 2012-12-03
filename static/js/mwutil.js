@@ -11,6 +11,10 @@ mw.cmp = function (a, b) {
     }
 };
 
+mw.log = function (x, base) {
+    return Math.log(x) / Math.log(base);
+};
+
 mw.arrayRemove = function (arr, elem) {
     var i = arr.indexOf(elem);
     if (i >= 0) {
@@ -18,13 +22,23 @@ mw.arrayRemove = function (arr, elem) {
     }
 };
 
-mw.arrayRemovePred = function (pred) {
+mw.arrayRemovePred = function (arr, pred) {
     var i;
-    for (i = this.length - 1; i >= 0; i--) {
-        if (pred(this[i])) {
-            this.splice(i, 1);
+    for (i = arr.length - 1; i >= 0; i--) {
+        if (pred(arr[i])) {
+            arr.splice(i, 1);
         }
     }
+};
+
+mw.arraySearchPred = function (arr, pred) {
+    var i;
+    for (i = 0; i < arr.length; i++) {
+        if (pred(arr[i])) {
+            return i;
+        }
+    }
+    return -1;
 };
 
 mw.arrayBinarySearch = function (arr, elem, key) {
@@ -82,8 +96,8 @@ mw.makeTable = function (rows, colStyles) {
     return table;
 };
 
-mw.makeSelect = function (choices) {
-    var select = document.createElement("select");
+mw.fillSelect = function (select, choices) {
+    choices = choices || [];
     var i, option;
     for (i = 0; i < choices.length; i++) {
         option = document.createElement("option");
@@ -95,37 +109,68 @@ mw.makeSelect = function (choices) {
         }
         select.appendChild(option);
     }
+};
+
+// choices = [choice_name, [choice_name, choice_value], ...]
+mw.makeSelect = function (choices) {
+    var select = document.createElement("select");
+    mw.fillSelect(select, choices);
     return select;
 };
 
 mw.flash = function (message) {
     var flash = jQuery('.flash');
     flash.hide();
-    flash.html(message).append('<span class="close">&times;</span>').slideDown();
+    flash
+        .html(message)
+        .append('<span class="close">&times;</span>')
+        .slideDown()
+        .delay(5000)
+        .toggle("fade");
 };
 
-// property: {
-//     name: "prop_name",
-//     element: dom_element,
-// }
+// properties = { prop_name: dom_element, ... }
 mw.synchronize = function (object, properties) {
-    var i, prop;
-    var bindProp = function (p, f) {
-        return function () { f(p); };
+    var bind = function (p, f) {
+        return function () {
+            var i, args = [p];
+            for (i = 0; i < arguments.length; i++) {
+                args.push(arguments[i]);
+            }
+            return f.apply(null, args);
+        };
     };
-    for (i = 0; i < properties.length; i++) {
-        prop = properties[i];
-        
-        if (prop.element.nodeName == "input") {
-            $(prop.element).change(
-                bindProp(prop, function (prop) {
-                    object[prop.name] = prop.element.value;
-                })
-            );
-        } else if (prop.element.classList.indexOf("ui-slider") >= 0) {
+
+    var newProps = {};
+    var propName, propElement;
+    for (propName in properties) {
+        if (properties.hasOwnProperty(propName)) {
+            propElement = properties[propName];
             
+            if (propElement.nodeName.toLowerCase() === "input"
+                || propElement.nodeName.toLowerCase() === "select") {
+                newProps[propName] = {
+                    get: bind(propElement, function (pe) {
+                        return pe.value;
+                    }),
+                    set: bind(propElement, function (pe, v) {
+                        pe.value = v;
+                    })
+                };
+            } else if (propElement.classList.contains("ui-slider")) {
+                newProps[propName] = {
+                    get: bind(propElement, function (pe) {
+                        return $(pe).slider("value");
+                    }),
+                    set: bind(propElement, function (pe, v) {
+                        $(pe).slider("value", v);
+                    })
+                };
+            }
         }
     }
+
+    Object.defineProperties(object, newProps);
 };
 
 (function ($) {

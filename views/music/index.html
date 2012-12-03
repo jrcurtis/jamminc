@@ -1,0 +1,56 @@
+
+{{extend 'layout.html'}}
+
+<ul class="browse-list">
+  <li>
+    <h2>Your songs</h2>
+    <span>
+      Sort by: 
+      <ul class="button-group">
+        <li><a href="#">Views</a></li>
+        <li><a href="#">Rating</a></li>
+        <li><a href="#">Date</a></li>
+      </ul>
+    </span>
+    <ol>
+      {{ for row in songs: }}
+          <li>
+            <a href="{{= URL('music', 'view', args=['song', row.id]) }}">
+              {{= row.name }}
+            </a>
+      {{ pass }}
+      {{ if not songs: }}
+          No songs to display.
+      {{ pass }}
+      <div><a class="button" href="{{= URL('music', 'edit', args=['song']) }}">New song</a></div>
+    </ol>
+  </li>
+
+  <li>
+    <h2>Your instruments</h2>
+    <span>
+      Sort by: 
+      <ul class="button-group">
+        <li><a href="#">Views</a></li>
+        <li><a href="#">Rating</a></li>
+        <li><a href="#">Date</a></li>
+      </ul>
+    </span>
+    <ol>
+      {{ for row in instruments: }}
+          <li>
+            <a href="{{= URL('music', 'view', args=['instrument', row.id]) }}">
+              {{= row.name }}
+            </a>
+          </li>
+      {{ pass }}
+      {{ if not instruments: }}
+          No instruments to display.
+      {{ pass }}
+      <div><a class="button" href="{{= URL('music', 'edit', args=['instrument']) }}">New instrument</a></div>
+    </ol>
+  </li>
+</ul>
+
+
+

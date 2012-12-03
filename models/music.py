@@ -8,6 +8,9 @@ db.define_table(
     Field('original', 'reference instruments'),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
+    Field('rating', 'double',
+          compute=lambda x: x.upvotes / max(1, x.upvotes + x.downvotes)),
+    Field('views', 'integer', default=0),
     Field('created', 'datetime', default=request.utcnow))
 
 db.define_table(
@@ -27,6 +30,9 @@ db.define_table(
           default=auth.user_id, required=True, notnull=True),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
+    Field('rating', 'double',
+          compute=lambda x: x.upvotes / max(1, x.upvotes + x.downvotes)),
+    Field('views', 'integer', default=0),
     Field('created', 'datetime', default=request.utcnow))
 
 db.define_table(

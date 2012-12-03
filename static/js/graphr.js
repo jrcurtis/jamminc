@@ -12,21 +12,7 @@ graphr.randomColor = function () {
 };
 
 graphr.init = function () {
-    Array.prototype.mwRemove = function (elem) {
-        var i = this.indexOf(elem);
-        if (i >= 0) {
-            this.splice(i, 1);
-        }
-    };
 
-    Array.prototype.mwRemovePred = function (pred) {
-        var i;
-        for (i = this.length - 1; i >= 0; i--) {
-            if (pred(this[i])) {
-                this.splice(i, 1);
-            }
-        }
-    };
 };
 
 graphr.nodeCategories = { "": "#FAA" };
@@ -200,9 +186,14 @@ graphr.Graph = function (spec) {
             .droppable({
                 accept: ".graph-node-selection li",
                 drop: function (event, ui) {
+                    var offset = ui.helper.offset();
+                    var eOffset = $(element).offset();
                     that.addNode(
                         { type: ui.helper.data("mwNodeType") },
-                        $(ui.helper).offset());
+                        {
+                            left: offset.left - eOffset.left,
+                            top: offset.top - eOffset.top
+                        });
                 }
             })
             .pannable();
@@ -226,7 +217,7 @@ graphr.Graph = function (spec) {
         makeNavigationMenu();
         $(navigationMenu)
             .css({
-                display: "inline"
+                cssFloat: "left"
             });
 
         $(uiContainer)
@@ -283,6 +274,9 @@ graphr.Graph = function (spec) {
                 left: eOffset.left + $e.width() / 2,
                 top: eOffset.top + $e.height() / 2
             };
+        } else {
+            offset.top += eOffset.top;
+            offset.left += eOffset.left;
         }
 
         var nodeElement = node.getElement();
@@ -300,7 +294,7 @@ graphr.Graph = function (spec) {
     };
 
     this._removeNode = function (node) {
-        nodes.mwRemove(node);
+        delete nodes[node.getId()];
         $(node.getElement()).detach();
         $(navigationMenu).find("[value=" + node.getId() + "]").detach();
     };
@@ -395,6 +389,16 @@ graphr.Graph = function (spec) {
         }
     };
 
+    this.update = function () {
+        navigateTo(terminalNode);
+        var nodeId;
+        for (nodeId in nodes) {
+            if (nodes.hasOwnProperty(nodeId)) {
+                nodes[nodeId].update();
+            }
+        }
+    };
+
     this.getElement = function () {
         return uiContainer;
     };
@@ -423,7 +427,7 @@ graphr.Graph = function (spec) {
         makeGraph();
 
         nodeTypes = {};
-        nodes = [];
+        nodes = {};
         terminalNodeType = null;
         terminalNode = null;
 
@@ -630,16 +634,29 @@ graphr.GraphNode = function (spec) {
         }
     };
 
+    var outputsEqual = function (o1, o2) {
+        return (o1.object === o2.object) && (o1.input === o2.input);
+    };
+
     this.addOutput = function (output, other, input, edge) {
         checkOutput(output);
-        outputs[output].push({object: other, input: input, edge: edge});
+        // Check if this output exists already
+        var o = { object: other, input: input, edge: edge };
+        if (mw.arraySearchPred(
+            outputs[output],
+            function (o2) { return outputsEqual(o, o2); }) == -1) {
+            outputs[output].push(o);
+        }
     };
 
     this.removeOutput = function (output, other, input) {
         checkOutput(output);
-        outputs[output].mwRemovePred(function (o) {
-            return (o.object === other) && (o.input === input);
-        });
+        var o = { object: other, input: input };
+        mw.arrayRemovePred(
+            outputs[output],
+            function (o2) {
+                return outputsEqual(o, o2);
+            });
     };
 
     this.setInput = function (input, other, output, edge) {
@@ -699,7 +716,7 @@ graphr.GraphNode = function (spec) {
     this.serialize = function () {
         var data = {};
 
-        data.offset = $(element).offset();
+        data.offset = $(element).position();
         data.type = type.name;
 
         data.inputs = {};
@@ -734,6 +751,16 @@ graphr.GraphNode = function (spec) {
         }
 
         return data;
+    };
+
+    this.update = function () {
+        var inputName;
+        for (inputName in inputs) {
+            if (inputs.hasOwnProperty(inputName)
+                && inputs[inputName] !== null) {
+                inputs[inputName].edge.update();
+            }
+        }
     };
 
     this.getElement = function () {
@@ -828,7 +855,7 @@ graphr.GraphEdge = function (spec) {
             end.object.removeInput(end.input);
         }
 
-        $(start.element).data("mwEdgeOutputs").mwRemove(this);
+        mw.arrayRemove($(start.element).data("mwEdgeOutputs"), this);
         $(end.element).data("mwEdgeInput", null);
 
         path.element.parentNode.removeChild(path.element);
@@ -851,7 +878,7 @@ graphr.GraphEdge = function (spec) {
                 end.input, newStart.object, newStart.output, this);
         }
 
-        $(start.element).data("mwEdgeOutputs").mwRemove(this);
+        mw.arrayRemove($(start.element).data("mwEdgeOutputs"), this);
         $(newStart.element).data("mwEdgeOutputs").push(this);
         start = newStart;
 

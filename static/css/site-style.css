@@ -148,8 +148,11 @@ a:hover {
 
 #popular {
     float: left;
-    list-style: none;
     width: 200px;
+}
+
+.browse-list {
+    list-style: none;
     padding: 10px;
     margin: 0px;
     border-radius: 5px;
@@ -159,7 +162,7 @@ a:hover {
     background-position: top;
 }
 
-#popular>li {
+.browse-list>li {
     background-color: #FFF;
     padding: 5px;
     margin: 5px 0px 5px 0px;
@@ -167,19 +170,20 @@ a:hover {
     box-shadow: 1px 1px 2px 1px #AAA inset;
 }
 
-#popular>li>h2 {
+.browse-list>li>h2 {
     font-size: 1.2em;
-    margin: 2px 0px;
+    line-height: 1.8em;
     text-shadow: 1px 1px 1px #999;
+    display: inline;
 }
 
-#popular>li>ol {
+.browse-list>li>ol {
     padding: 0px;
     margin: 0px;
     list-style-position: inside;
 }
 
-#popular>li>ol>li {
+.browse-list>li>ol>li {
     padding: 0px;
     margin: 0px;
     white-space: nowrap;
@@ -188,8 +192,11 @@ a:hover {
 }
 
 #news {
-    padding-left: 230px;
     list-style: none;
+}
+
+.main-content {
+    padding-left: 230px;
 }
 
 span.view-label {
@@ -205,4 +212,103 @@ ul.view-options>li {
     float: left;
     padding-left: 3px;
 }
+
+.ui-box {
+    border-radius: 5px;
+    box-shadow: 1px 1px 2px 1px #AAA inset;
+    margin: 5px 0px;
+    padding: 5px;
+}
+
+.button {
+    display: inline-block;
+    height: 1.5em;
+    border-radius: 1.5em;
+    text-align: center;
+    padding: 0em 1em;
+    background-color: #00F;
+    background-image: url('/jamminc/static/images/button-bg.png');
+    background-size: 50px 100%;
+    background-repeat: repeat-x;
+    color: #FFF;
+    text-shadow: 0px 1px #444;
+}
+
+.button:hover {
+    text-decoration: none;
+    box-shadow: 0px -1px 5px #EEE inset;
+}
+
+.button-group {
+    display: inline-block;
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+.button-group>li {
+    display: inline-block;
+    float: left;
+    margin: 0px;
+    height: 1.5em;
+    text-align: center;
+    padding: 0em 1em;
+    background-color: #00F;
+    background-image: url('/jamminc/static/images/button-bg.png');
+    background-size: 50px 100%;
+    background-repeat: repeat-x;
+}
+
+.button-group>li>a {
+    color: #FFF;
+    text-shadow: 0px 1px #444;
+}
+
+.button-group>li:first-child {
+    border-top-left-radius: 1.5em;
+    border-bottom-left-radius: 1.5em;
+}
+
+.button-group>li:last-child {
+    border-top-right-radius: 1.5em;
+    border-bottom-right-radius: 1.5em;
+}
+
+.button-group>li:not(:last-child) {
+    border-right: solid 1px #444;
+}
+
+.button-group>li:hover {
+    box-shadow: 0px -1px 5px #EEE inset;
+}
+
+.button-group>li:hover>a {
+    text-decoration: none;
+}
+
+.music-list {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+.music-list>li {
+    float: left;
+    display: block;
+    width: 150px;
+    height: 150px;
+    text-align: center;
+}
+
+.clearfix {
+    display: block;
+    height: 1px;
+    clear: both;
+}
+
+.music-art {
+    display: block;
+    margin: 3px auto;
+}
+
 

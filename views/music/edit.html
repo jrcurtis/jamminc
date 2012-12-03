@@ -12,33 +12,43 @@
 
 {{extend 'layout.html'}}
 
-<div>
-  <a href="#">Fork this instrument</a> 
-  <a href="#">See instruments based on this instrument</a> 
-  <a href="#">See songs using this instrument</a> 
+<div id="inst-id" style="display: none;">{{=inst_id}}</div>
+<div id="song-id" style="display: none;">{{=song_id}}</div>
+
+<div class="ui-box">
+  <div>
+    <ul class="button-group">
+      <li><a href="#">Fork this instrument</a></li>
+      <li><a href="#">Instruments based on this instrument</a></li>
+      <li><a href="#">Songs using this instrument</a></li>
+    </ul>
+  </div>
+
+  <div>
+    <a id="new-instrument" class="button" href="#">New instrument</a>
+    <select id="load-instrument">
+      <option>---Load instrument---</option>
+      <option>Cool stuff</option>
+      <option>Etc.</option>
+    </select>
+    <a id="save-instrument" class="button" href="#">Save instrument</a>
+  </div>
+
+  <div id="instrument-ui"></div>
 </div>
 
-<div>
-  <input id="new-song" type="button" value="New song"/>
-  <input id="save-song" type="button" value="Save song"/>
-  <input id="play-song" type="button" value="Play song"/>
-  <audio id="music-audio" controls></audio>
-</div>
+<div class="ui-box song-controls">
+  <div>
+    <a id="save-song" class="button" href="#">Save song</a>
+    <a id="play-song" class="button" href="#">Play song</a>
+    <audio id="music-audio" controls></audio>
+  </div>
 
-<div>
-  <input id="new-instrument" type="button" value="New instrument"/>
-  <input id="save-instrument" type="button" value="Save instrument"/>
+  <div>
+    <a id="new-track" class="button" href="#">New track</a>
+  </div>
+  <ul id="tracks-ui" style="list-style: none; margin: 0px; padding: 0px;"></ul>
 </div>
-
-<div>
-  <input id="instrument-name" type="text"/>
-</div>
-<div id="instrument-ui"></div>
-
-<div>
-  <input id="new-track" type="button" value="New track"/>
-</div>
-<ul id="tracks-ui" style="list-style: none; margin: 0px; padding: 0px;"></ul>
 
   
   

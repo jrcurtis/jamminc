@@ -16,29 +16,25 @@ music.noteNumbers = {
     "B": 11
 };
 
-music.noteNames = {
-    0: "C",
-    1: "C#",
-    2: "D",
-    3: "D#",
-    4: "E",
-    5: "F",
-    6: "F#",
-    7: "G",
-    8: "G#",
-    9: "A",
-    10: "A#",
-    11: "B"
-};
+music.noteNames = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B"
+];
 
 music.MAX_MIDI_NOTE = 127;
 
-music.log = function (x, base) {
-    return Math.log(x) / Math.log(base);
-};
-
 music.frequencyToMidi = function (freq) {
-    return 69 + 12 * music.log(freq / 440, 2);
+    return 69 + 12 * mw.log(freq / 440, 2);
 };
 
 music.midiToFrequency = function (note) {
@@ -76,4 +72,8 @@ music.parseNote = function (str) {
     }
 
     return result;
+};
+
+music.noteName = function (midiNote) {
+    return music.noteNames[Math.floor(midiNote) % music.noteNames.length];
 };

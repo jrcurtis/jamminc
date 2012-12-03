@@ -11,7 +11,7 @@
 .pianoroll {
     position: relative;
     background-color: #AAA;
-    min-width: 100px;
+    padding-left: 20px;
 }
 
 .pianoroll-svg {
@@ -28,4 +28,31 @@
     border-color: #AAA;
     background-color: #EEE;
 }
+
+.note-icon-list {
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    z-index: 50;
+}
+
+.note-icon-list>li {
+    width: 20px;
+    height: 20px;
+    margin: 0px;
+    margin-bottom: 3px;
+    padding: 0px;
+    background-color: #FFF;
+    font-size: 0.7em;
+    text-align: center;
+}
+
+.note-icon-list>li.black-note {
+    background-color: #000;
+    color: #FFF;
+}
+
 

@@ -1,28 +1,65 @@
+
 {{extend 'layout.html'}}
 
-<h2>Songs</h2>
-<div>
-  Sort by: 
-  <a href="#">Views</a>
-  <a href="#">Rating</a>
-  <a href="#">Date</a>
-</div>
-<ol>
-  <li><a href="song.html">My song</a></li>
-  <li><a href="song.html">A lovely song</a></li>
-  <li><a href="song.html">A song for two</a></li>
-</ol>
+<ul class="browse-list">
+  <li>
+    <h2>Songs</h2>
+    <span>
+      Sort by: 
+      <ul class="button-group">
+        <li><a href="#">Views</a></li>
+        <li><a href="#">Rating</a></li>
+        <li><a href="#">Date</a></li>
+      </ul>
+    </span>
+    <ol class="music-list">
+      {{ for row in songs: }}
+          <li>
+            <img class="music-art" src="/jamminc/static/images/default-art.png"/>
+            <a href="{{= URL('music', 'view', args=['song', row.songs.id]) }}">
+              {{= row.songs.name }}
+            </a>
+            <br/>by
+            <a href="{{= URL('default', 'profile', args=[row.songs.author]) }}">
+              {{= row.auth_user.username }}
+            </a>
+          </li>
+      {{ pass }}
+    </ol>
+    <div class="clearfix"></div>
+    {{ if not songs: }}
+        No songs to display.
+    {{ pass }}
+  </li>
 
-<h2>Instruments</h2>
-<div>
-  Sort by: 
-  <a href="#">Views</a>
-  <a href="#">Rating</a>
-  <a href="#">Date</a>
-</div>
-<ol>
-  <li>Groovy instrument</li>
-  <li>Bangin instrument</li>
-  <li>Shredding instrument</li>
-</ol>
-      
+  <li>
+    <h2>Instruments</h2>
+    <span>
+      Sort by: 
+      <ul class="button-group">
+        <li><a href="#">Views</a></li>
+        <li><a href="#">Rating</a></li>
+        <li><a href="#">Date</a></li>
+      </ul>
+    </span>
+    <ol class="music-list">
+      {{ for row in instruments: }}
+          <li>
+            <img class="music-art" src="/jamminc/static/images/default-art.png"/>
+            <a href="{{= URL('music', 'view', args=['instrument', row.instruments.id]) }}">
+              {{= row.instruments.name }}
+            </a>
+            <br/>by
+            <a href="{{= URL('default', 'profile', args=[row.instruments.author]) }}">
+              {{= row.auth_user.username }}
+            </a>
+          </li>
+      {{ pass }}
+    </ol>
+    <div class="clearfix"></div>
+    {{ if not instruments: }}
+        No instruments to display.
+    {{ pass }}
+  </li>
+</ul>
+    
