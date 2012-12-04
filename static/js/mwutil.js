@@ -41,6 +41,33 @@ mw.arraySearchPred = function (arr, pred) {
     return -1;
 };
 
+mw.CircularBuffer = function (size) {
+    var that = this;
+    var array, index;
+
+    Object.defineProperties(this, {
+        length: {
+            get: function () { return size; }
+        }
+    });
+
+    this.insert = function (x) {
+        array[index % size] = x;
+        index = (index + 1) % size;
+    };
+
+    this.at = function (i) {
+        return array[(index + i) % size];
+    };
+
+    var init = function () {
+        size = size || 10;
+        array = [];
+        index = 0;
+    };
+    init();
+};
+
 mw.arrayBinarySearch = function (arr, elem, key) {
     var low = -1;
     var high = arr.length;

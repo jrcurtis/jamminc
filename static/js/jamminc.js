@@ -707,11 +707,23 @@ jamminc.InstrumentManager = function (spec) {
 
     this.loadInstrument = function (id) {
         var inst = new jamminc.Instrument({ id: id });
-        
+        instruments.insert(inst);
+        return inst;
+    };
+
+    this.getInstrument = function (id) {
+        var i;
+        for (i = 0; i < instruments.length; i++) {
+            if (instruments.at(i).id === id) {
+                return instruments.at(i);
+            }
+        }
+
+        return that.loadInstrument(id);
     };
 
     var init = function () {
-        instruments = [];
+        instruments = new mw.CircularBuffer(10);
         loadedInstruments = [];
     };
     init();
