@@ -40,13 +40,13 @@
 }
 
 .note-icon-list>li {
-    width: 20px;
-    height: 20px;
+    width: 10px; /* width = height = pianoroll.noteHeight / 2 */
+    height: 10px;
     margin: 0px;
-    margin-bottom: 3px;
-    padding: 0px;
+    margin-bottom: 3px; /* margin-bottom = pianoroll.notePadding */
+    padding: 5px; /* padding = pianoroll.noteHeight / 4 */
     background-color: #FFF;
-    font-size: 0.7em;
+    font-size: 10px;
     text-align: center;
 }
 

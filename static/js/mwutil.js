@@ -125,6 +125,7 @@ mw.makeTable = function (rows, colStyles) {
 
 mw.fillSelect = function (select, choices) {
     choices = choices || [];
+    $(select).empty();
     var i, option;
     for (i = 0; i < choices.length; i++) {
         option = document.createElement("option");
@@ -151,9 +152,8 @@ mw.flash = function (message) {
     flash
         .html(message)
         .append('<span class="close">&times;</span>')
-        .slideDown()
-        .delay(5000)
-        .toggle("fade");
+        .slideDown();
+    setTimeout(function () { flash.fadeOut(); }, 5000);
 };
 
 // properties = { prop_name: dom_element, ... }
