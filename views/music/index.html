@@ -15,7 +15,7 @@
     <ol>
       {{ for row in songs: }}
           <li>
-            <a href="{{= URL('music', 'view', args=['song', row.id]) }}">
+            <a href="{{= URL('music', 'edit', args=['song', row.id]) }}">
               {{= row.name }}
             </a>
       {{ pass }}
@@ -39,7 +39,7 @@
     <ol>
       {{ for row in instruments: }}
           <li>
-            <a href="{{= URL('music', 'view', args=['instrument', row.id]) }}">
+            <a href="{{= URL('music', 'edit', args=['instrument', row.id]) }}">
               {{= row.name }}
             </a>
           </li>

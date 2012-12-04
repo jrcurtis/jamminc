@@ -12,6 +12,16 @@ a:hover {
     text-decoration: underline;
 }
 
+h2 {
+    font-size: 1.5em;
+    margin: 3px 0px;
+}
+
+h3 {
+    font-size: 1.3em;
+    margin: 3px 0px;
+}
+
 .flash {
     position: fixed;
     right: 0px;
@@ -310,5 +320,42 @@ ul.view-options>li {
     display: block;
     margin: 3px auto;
 }
+
+.view-art {
+    margin: 10px;
+    float: left;
+}
+
+.description, .comment {
+    padding-left: 130px;
+    white-space: pre-wrap;
+}
+
+.comments {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+.comments>li {
+    border: solid 1px #6FA3AE;
+    margin: 5px;
+    position: relative;
+    min-height: 120px;
+}
+
+.comments .sidebar {
+    position: absolute;
+    background-color: #AFD8E1;
+    width: 120px;
+    text-align: center;
+    height: 100%;
+}
+
+
+
+
+
+
 
 

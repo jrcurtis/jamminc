@@ -262,7 +262,7 @@ jamminc.Instrument = function (spec) {
 
 
     var API_URL = "/jamminc/music/instrument.json";
-    var id, local;
+    var id, local, ready;
     var graph, nameInput;
 
     Object.defineProperties(this, {
@@ -274,8 +274,13 @@ jamminc.Instrument = function (spec) {
         },
         graph: {
             get: function () { return graph; }
+        },
+        ready: {
+            get: function () { return ready; }
         }
     });
+
+    this.onready = null;
 
     this.place = function () {
         $("#instrument-ui")
@@ -319,6 +324,9 @@ jamminc.Instrument = function (spec) {
                     that.name = data.name;
                     graph.deserialize(data.data);
                     graph.update();
+                }
+                if (this.onready) {
+                    this.onready({ success: data.error === undefined });
                 }
             }
         });
@@ -370,6 +378,7 @@ jamminc.Instrument = function (spec) {
         });
 
         local = false;
+        ready = false;
         id = spec.id || 0;
         that.name = "My dope instrument";
 
@@ -377,6 +386,7 @@ jamminc.Instrument = function (spec) {
             that.load();
         } else {
             local = true;
+            ready = true;
             graph.deserialize(jamminc.defaultInstrument);
         }
     };
@@ -458,7 +468,8 @@ jamminc.Track = function (spec) {
             data: {
                 song_id: song.id,
                 name: roll.trackName,
-                data: roll.serialize()
+                data: roll.serialize(),
+                inst_id: roll.instrument
             },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
@@ -502,7 +513,8 @@ jamminc.Track = function (spec) {
             data: {
                 track_id: id,
                 name: roll.trackName,
-                data: roll.serialize()
+                data: roll.serialize(),
+                inst_id: roll.instrument
             },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
@@ -702,93 +714,103 @@ jamminc.InstrumentManager = function (spec) {
     spec = spec || {};
     var that = this;
 
-    var instruments;
-    var loadedInstruments;
+    var instruments, localInstrument, currentInstrument;
 
-    this.loadInstrument = function (id) {
+    this.load = function (id) {
         var inst = new jamminc.Instrument({ id: id });
         instruments.insert(inst);
         return inst;
     };
 
-    this.getInstrument = function (id) {
-        var i;
+    this.get = function (id) {
+        if (id === "local") {
+            return localInstrument;
+        }
+
+        var i, inst;
         for (i = 0; i < instruments.length; i++) {
-            if (instruments.at(i).id === id) {
+            inst = instruments.at(i);
+            if (inst && inst.id === id) {
                 return instruments.at(i);
             }
         }
 
-        return that.loadInstrument(id);
+        return that.load(id);
+    };
+    
+    this.create = function () {
+        localInstrument = new jamminc.Instrument();
+        localInstrument.place();
+    };
+
+    this.makeCurrent = function (id) {
+        currentInstrument = that.get(id);
+        currentInstrument.place();
+    };
+
+    this.saveCurrent = function () {
+        if (currentInstrument) {
+            currentInstrument.save();
+        }
     };
 
     var init = function () {
         instruments = new mw.CircularBuffer(10);
-        loadedInstruments = [];
+        localInstrument = null;
+        currentInstrument = null;
     };
     init();
 };
 
 $(function () {
     //var song = new jamminc.Song();
-    var song = null;
-    var instrument = null;
+    jamminc.song = null;
+    jamminc.instrumentManager = new jamminc.InstrumentManager();
     var id = 0;
 
     if (id = $("#song-id").text()) {
         if (id === "new") {
             id = 0;
         }
-        song = new jamminc.Song({ id: id });
+        jamminc.song = new jamminc.Song({ id: id });
     } else if (id = $("#inst-id").text()) {
         if (id === "new") {
             id = 0;
         }
-        instrument = new jamminc.Instrument({ id: id });
-        instrument.place();
+        jamminc.instrumentManager.makeCurrent(id);
         $(".song-controls").css({ display: "none" });
     }
 
     $("#play-song").click(function (event) {
-        if (song) {
-            song.generateAudio();
+        if (jamminc.song) {
+            jamminc.song.generateAudio();
         }
     });
 
     $("#new-instrument").click(function (event) {
-        instrument = new jamminc.Instrument();
-        instrument.place();
+        jamminc.instrumentManager.create();
     });
 
     $("#load-instrument").change(function (event) {
-        $(this)
-            .find("option:selected")
-            .each(function (i, option) {
-                if (option.value) {
-                    instrument = new jamminc.Instrument({
-                        id: $("#load-instrument").attr("value")
-                    });
-                    instrument.place();
-                }
-            });
+        if (this.value) {
+            jamminc.instrumentManager.get(this.value).place();
+        }
         this.selectedIndex = 0;
     });
 
+    $("#save-instrument").click(function () {
+        jamminc.instrumentManager.saveCurrent();
+    });
+
     $("#new-track").click(function (event) {
-        if (song) {
-            song.addTrack();
+        if (jamminc.song) {
+            jamminc.song.addTrack();
         }
     });
 
     $("#save-song").click(function () {
-        if (song) {
-            song.save();
-        }
-    });
-
-    $("#save-instrument").click(function () {
-        if (instrument) {
-            instrument.save();
+        if (jamminc.song) {
+            jamminc.song.save();
         }
     });
 
@@ -806,8 +828,8 @@ $(function () {
                         .get(0));
             });
 
-            if (song) {
-                song.instruments = data.instruments;
+            if (jamminc.song) {
+                jamminc.song.instruments = data.instruments;
             }
         }
     });

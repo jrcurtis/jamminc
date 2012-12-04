@@ -43,15 +43,92 @@ def edit():
 
 def browse():
     return {
-        'songs': db(db.songs.author == db.auth_user.id).select(
+        'songs': db(db.songs).select(
             db.songs.id, db.songs.name, db.songs.author, db.auth_user.username,
             orderby=db.songs.rating,
             limitby=(0, 10)),
-        'instruments': db(db.instruments.author == db.auth_user.id).select(
+        'instruments': db(db.instruments).select(
             db.instruments.id, db.instruments.name, db.instruments.author, db.auth_user.username,
             orderby=db.instruments.rating,
             limitby=(0, 10)),
         }
+
+def view():
+    return_data = {}
+
+    song = instrument = None
+    
+    if len(request.args) != 2:
+        raise HTTP(404)
+
+    if request.args[0] == 'instrument':
+        instrument = (
+            db(db.instruments.id == request.args[1])
+            .select(db.instruments.id, db.instruments.name,
+                    db.instruments.description,
+                    db.instruments.author, db.instruments.created)
+            .first())
+
+        if not instrument:
+            raise HTTP(404)
+
+        return_data['instrument'] = instrument
+        return_data['author'] = db.auth_user[instrument.author]
+
+        return_data['comments'] = (
+            db(db.comments.instrument == instrument.id)
+            .select(db.comments.text, db.comments.created,
+                    db.auth_user.id, db.auth_user.username))
+
+        db.comments.instrument.default = instrument.id
+
+    elif request.args[0] == 'song':
+        song = (
+            db(db.songs.id == request.args[1])
+            .select(db.songs.id, db.songs.name, db.songs.author,
+                    db.songs.description, db.songs.created)
+            .first())
+
+        if not song:
+            raise HTTP(404)
+
+        return_data['song'] = song
+        return_data['author'] = db.auth_user[song.author]
+
+        return_data['tracks'] = (
+            db(db.tracks.song == song.id)
+            .select(db.tracks.name))
+
+        return_data['instruments'] = (
+            db((db.tracks.song == song.id)
+               & (db.tracks.instrument == db.instruments.id))
+            .select(db.instruments.id, db.instruments.name,
+                    db.auth_user.id, db.auth_user.username))
+
+        db.comments.song.default = song.id
+
+    else:
+        raise HTTP(404)
+
+    if auth.user:
+        comment_form = SQLFORM(db.comments)
+        comment_form.process()
+    else:
+        comment_form = 'Log in to comment.'
+
+    comments_query = ((db.comments.song if song else db.comments.instrument)
+                      == (song.id if song else instrument.id))
+    return_data['comments'] = (
+        db(comments_query)
+        .select(db.comments.text, db.comments.created,
+                db.auth_user.id, db.auth_user.username))
+
+
+    return_data['song'] = song
+    return_data['instrument'] = instrument
+    return_data['comment_form'] = comment_form
+
+    return return_data
 
 @request.restful()
 def instrument():
@@ -155,14 +232,15 @@ def track():
 
         return return_data
 
-    def POST(song_id, name, data):
+    def POST(song_id, name, data, inst_id=0):
         return_data = {}
 
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
             result = db.tracks.validate_and_insert(
-                song=song_id, name=name, data=data, author=auth.user_id)
+                song=song_id, name=name, data=data, instrument=inst_id,
+                author=auth.user_id)
 
             if result.errors:
                 return_data['error'] = 'Database error'
@@ -174,7 +252,7 @@ def track():
 
         return return_data
 
-    def PUT(track_id, name, data):
+    def PUT(track_id, name, data, inst_id=0):
         return_data = {}
 
         if not auth.user:
@@ -182,7 +260,8 @@ def track():
         else:
             track_query = ((db.tracks.id == track_id)
                            & (db.tracks.author == auth.user_id))
-            result = db(track_query).validate_and_update(name=name, data=data)
+            result = db(track_query).validate_and_update(
+                name=name, data=data, instrument=inst_id)
 
             if result.errors:
                 return_data['error'] = 'Database error'
