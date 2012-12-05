@@ -283,9 +283,6 @@ jamminc.Instrument = function (spec) {
         }
     });
 
-    this.onready = null;
-    this.onsave = null;
-
     this.place = function () {
         $("#instrument-ui")
             .empty()
@@ -311,10 +308,9 @@ jamminc.Instrument = function (spec) {
                     id = data.inst_id;
                     mw.flash("New instrument created");
                 }
-                
-                if (that.onsave) {
-                    that.onsave({ success: data.error === undefined });
-                }
+
+                $(that).triggerHandler(
+                    "save", { success: data.error === undefined });
             }
         });
     };
@@ -328,14 +324,13 @@ jamminc.Instrument = function (spec) {
                 if (data.error) {
                     mw.flash("Couldn't load instrument: " + data.error);
                 } else {
+                    ready = true;
                     that.name = data.name;
                     graph.deserialize(data.data);
                     graph.update();
                 }
 
-                if (that.onready) {
-                    that.onready({ success: data.error === undefined });
-                }
+                $(that).triggerHandler("ready", { success: ready });
             }
         });
     };
@@ -361,9 +356,8 @@ jamminc.Instrument = function (spec) {
                     mw.flash("Instrument saved");
                 }
 
-                if (that.onsave) {
-                    that.onsave({ success: data.error === undefined });
-                }
+                $(that).triggerHandler(
+                    "save", { success: data.error === undefined });
             }
         });
     };
@@ -427,50 +421,36 @@ jamminc.Track = function (spec) {
         }
     });
 
-    this.generateAudio = function (wav) {
+    this.generateAudio = function (instrument, wav) {
         var notes = roll.getNotes();
-        var i, time, maxTime = 0;
-        for (i = 0; i < notes.length; i++) {
-            time = notes[i].time + notes[i].duration;
-            if (time > maxTime) {
-                maxTime = time;
-            }
-        }
-
-        var graph = roll.instrument;
-        var output = [];
+        var graph = instrument.graph;
         var global = {};
+        var sr = wav.getSampleRate();
         global.time = 0;
         global.sampleI = 0;
         global.lastSample = 0;
         global.wav = wav;
-        global.output = [];
 
-        for (i = 0; i < wav.getSampleRate() * maxTime; i++) {
-            output[i] = 0;
-        }
-
-        graph.initEval();
-        var noteI, sample, sampleI, note_time = 0;
+        var noteI, sample, sampleI, i;
         for (noteI = 0; noteI < notes.length; noteI++) {
             global.lastSample = 0;
             global.output = [];
             global.note = music.midiToFrequency(notes[noteI].pitch);
             global.time = 0;
-            sampleI = Math.floor(notes[noteI].time * wav.getSampleRate());
+            sampleI = Math.floor(notes[noteI].time * sr);
 
-            for (i = 0; i < notes[noteI].duration * wav.getSampleRate(); i++) {
+            graph.initEval();
+            for (i = 0; i < notes[noteI].duration * sr; i++) {
                 global.sampleI = sampleI + i;
                 sample = graph.evaluate(global);
                 global.output.push(sample);
-                output[global.sampleI] += sample;
                 global.lastSample = sample;
-                global.time = i / wav.getSampleRate();
+                global.time = i / sr;
             }
-        }
-        graph.haltEval();
+            graph.haltEval();
 
-        return output;
+            wav.write([global.output], sampleI);
+        }
     };
 
     this.create = function () {
@@ -590,30 +570,41 @@ jamminc.Song = function (spec) {
         }
     });
 
-    this.generateAudio = function () {
-        var wav = new mwWAV.WAV();
-        var output = [];
-
+    this.generateAudio = function (handler) {
         tracks.sort(function (t1, t2) {
-            return mw.cmp(t1.roll.instrument, t2.roll.instrument);
+            return (mw.cmp(jamminc.instrumentManager.isLoaded(t2.id),
+                           jamminc.instrumentManager.isLoaded(t1.id))
+                    || mw.cmp(t1.roll.instrument, t2.roll.instrument));
         });
 
-        var trackI, sampleI, trackOutput, instId, inst;
-        for (trackI = 0; trackI < tracks.length; trackI++) {
-            trackOutput = tracks[trackI].generateAudio(wav);
-            for (sampleI = 0; sampleI < trackOutput.length; sampleI++) {
-                if (sampleI >= output.length) {
-                    output.push(trackOutput[sampleI]);
-                } else {
-                    output[sampleI] += trackOutput[sampleI];
-                }
-            }
-        }
+        var wav = new mwWAV.WAV();
+        var trackI = 0;
 
-        wav.write([output]);
-        var audio = document.getElementById("music-audio");
-        audio.setAttribute("src", wav.getDataURI());
-        audio.play();
+        var gen = function () {
+            if (trackI >= tracks.length) {
+                handler(wav);
+                return;
+            }
+
+            var track = tracks[trackI];
+            var instId = track.roll.instrument;
+            var inst = jamminc.instrumentManager.get(instId);
+
+            var genTrack = function () {
+                $(inst).off("ready.jammincSong");
+                track.generateAudio(inst, wav);
+                trackI++;
+                gen();
+            };
+
+            if (inst.ready) {
+                genTrack();
+            } else {
+                $(inst).on("ready.jammincSong", genTrack);
+            }
+        };
+
+        gen();
     };
 
     this.addTrack = function (id) {
@@ -728,6 +719,17 @@ jamminc.InstrumentManager = function (spec) {
 
     var instruments, localInstrument, currentInstrument, instrumentIndex;
 
+    this.isLoaded = function (id) {
+        var i, inst;
+        for (i = 0; i < instruments.length; i++) {
+            inst = instruments.at(i);
+            if (inst && inst.id.toString() === id) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     this.load = function (id) {
         var inst = new jamminc.Instrument({ id: id });
         instruments.insert(inst);
@@ -735,6 +737,7 @@ jamminc.InstrumentManager = function (spec) {
     };
 
     this.get = function (id) {
+        id = id.toString();
         if (id === "local") {
             return localInstrument;
         }
@@ -742,7 +745,7 @@ jamminc.InstrumentManager = function (spec) {
         var i, inst;
         for (i = 0; i < instruments.length; i++) {
             inst = instruments.at(i);
-            if (inst && inst.id === id) {
+            if (inst && inst.id.toString() === id) {
                 return instruments.at(i);
             }
         }
@@ -757,7 +760,7 @@ jamminc.InstrumentManager = function (spec) {
     };
 
     this.makeCurrent = function (id) {
-        if ((id === "local") || (currentInstrument && (currentInstrument.id === id))) {
+        if (currentInstrument && (currentInstrument.id === id)) {
             return;
         }
 
@@ -782,15 +785,19 @@ jamminc.InstrumentManager = function (spec) {
 
     this.saveCurrent = function () {
         if (localInstrument && (localInstrument === currentInstrument)) {
-            localInstrument.onsave = function (e) {
-                localInstrument.onsave = null;
-                if (e.success) {
-                    instrumentIndex.push([localInstrument.name, localInstrument.id]);
-                    localInstrument = null;
-                    that.updateIndex();
-                }
-            };
-        }
+            $(localInstrument).on(
+                "save.jammincInstrumentManager",
+                function (e) {
+                    $(localInstrument).off("save.jammincInstrumentManager");
+                    if (e.success) {
+                        instrumentIndex.push(
+                            [localInstrument.name, localInstrument.id]);
+                        instruments.insert(localInstrument);
+                        localInstrument = null;
+                        that.updateIndex();
+                    }
+                });
+            }
 
         if (currentInstrument) {
             currentInstrument.save();
@@ -857,7 +864,11 @@ $(function () {
 
     $("#play-song").click(function (event) {
         if (jamminc.song) {
-            jamminc.song.generateAudio();
+            jamminc.song.generateAudio(function (wav) {
+                var audio = document.getElementById("music-audio");
+                audio.setAttribute("src", wav.getDataURI());
+                audio.play();
+            });
         }
         return false;
     });

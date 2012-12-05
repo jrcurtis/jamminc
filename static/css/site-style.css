@@ -230,18 +230,22 @@ ul.view-options>li {
     padding: 5px;
 }
 
-.button {
+.button, .button-group>li {
     display: inline-block;
-    height: 1em;
-    border-radius: 1.5em;
+    height: 1.5em;
     text-align: center;
-    padding: 0.25em 1em;
+    line-height: 1.5em;
+    padding: 0em 1em;
     background-color: #00F;
     background-image: url('/jamminc/static/images/button-bg.png');
     background-size: 50px 100%;
     background-repeat: repeat-x;
     color: #FFF;
     text-shadow: 0px 1px #444;
+}
+
+.button {
+    border-radius: 1.5em;
 }
 
 .button:hover {
@@ -257,16 +261,8 @@ ul.view-options>li {
 }
 
 .button-group>li {
-    display: inline-block;
     float: left;
     margin: 0px;
-    height: 1em;
-    text-align: center;
-    padding: 0.25em 1em;
-    background-color: #00F;
-    background-image: url('/jamminc/static/images/button-bg.png');
-    background-size: 50px 100%;
-    background-repeat: repeat-x;
 }
 
 .button-group>li>a {

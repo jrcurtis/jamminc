@@ -62,7 +62,7 @@ pianoroll.PianoRoll = function (spec) {
     };
 
     var screenToTime = function (x) {
-        return (x - beatWidth) / beatWidth / beatsPerMinute * 60;
+        return x / beatWidth / beatsPerMinute * 60;
     };
 
     var timeToScreen = function (t) {

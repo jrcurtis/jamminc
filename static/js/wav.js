@@ -60,36 +60,45 @@ mwWAV.WAV = function (spec) {
     var dataChunk = function () {
         var str = "";
         var samples = channelData.length > 0 ? channelData[0].length : 0;
-        var channel, sample;
-        for (sample = 0; sample < channelData[0].length; sample++) {
+        var channel, i, sample;
+        for (i = 0; i < channelData[0].length; i++) {
             for (channel = 0; channel < channels; channel++) {
-                str += encodeInt(channelData[channel][sample], bits / 8);
+                sample = convertSample(channelData[channel][i]);
+                str += encodeInt(sample, bits / 8);
             }
         }
         return encodeChunk("data", [[0, str]]);
     };
 
     var convertSample = function (sample) {
+        sample = Math.min(1, Math.max(-1, sample));
         if (bits === 8) {
             sample = (sample + 1) / 2;
         }
-        sample = Math.round(Math.min(1, Math.max(-1, sample)) * maxSample);
+        sample = Math.round(sample * maxSample);
         if (sample < 0) {
             sample += sampleShift;
         }
         return sample;
     };
 
-    this.write = function (data) {
+    this.write = function (data, start) {
         if (data.length !== channels) {
             throw new Error("Must write the correct number of channels");
         }
 
-        var channel, sample;
-        for (channel = 0; channel < channels; channel++) {
-            for (sample = 0; sample < data[channel].length; sample++) {
-                channelData[channel].push(
-                    convertSample(data[channel][sample]));
+        start = start === undefined ? channelData[0].length : start;
+
+        var channel, i;
+        for (i = channelData[0].length; i < start + data[0].length; i++) {
+            for (channel = 0; channel < channels; channel++) {
+                channelData[channel].push(0);
+            }
+        }
+
+        for (i = 0; i < data[0].length; i++) {
+            for (channel = 0; channel < channels; channel++) {
+                channelData[channel][start + i] += data[channel][i];
             }
         }
     };
