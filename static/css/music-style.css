@@ -29,6 +29,13 @@
     background-color: #EEE;
 }
 
+.pianoroll-settings .close {
+    width: 12px;
+    height: 12px;
+    background-image: url('/jamminc/static/images/x.png');
+    float: left;
+}
+
 .note-icon-list {
     list-style: none;
     padding: 0px;

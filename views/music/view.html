@@ -1,10 +1,16 @@
 
 {{extend 'layout.html'}}
 
-{{ thing = song if song else instrument }}
+{{ thing = song if song else instrument 
+   thing_type = 'song' if song else 'instrument' }}
 
 <div class="ui-box">
   <h2>{{= thing.name }}</h2>
+  {{ if auth.user_id == author.id: }}
+      <a href="{{= URL('music', 'edit', args=[thing_type, thing.id]) }}">
+        edit
+      </a>
+  {{ pass }}
   <div>
     By
     <a href="{{= URL('default', 'profile', args=[author.id]) }}">
@@ -32,8 +38,8 @@
                   {{= row.instruments.name }}
                 </a>
                 <br/>by
-                <a href="{{= URL('default', 'profile', args=[author.id]) }}">
-                  {{= author.username }}
+                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
+                  {{= row.auth_user.username }}
                 </a>
               </li>
           {{ pass }}

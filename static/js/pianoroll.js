@@ -159,6 +159,12 @@ pianoroll.PianoRoll = function (spec) {
             pan: panSlider
         });
 
+        var closeButton = $(document.createElement("div"))
+            .attr("class", "close")
+            .click(function (event) {
+                $(that).triggerHandler("remove");
+            });
+
         var settingsTable = mw.makeTable(
             [["Name", trackNameInput],
              ["Instrument", instrumentSelect],
@@ -175,7 +181,7 @@ pianoroll.PianoRoll = function (spec) {
                 width: settingsWidth,
                 cssFloat: "left"
             })
-            .append(settingsTable);
+            .append(closeButton, settingsTable);
 
         noteIcons = $(pianoroll.noteIcons)
             .clone()

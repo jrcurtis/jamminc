@@ -18,9 +18,10 @@
 <div class="ui-box">
   <div>
     <ul class="button-group">
-      <li><a href="#">Fork this instrument</a></li>
-      <li><a href="#">Instruments based on this instrument</a></li>
-      <li><a href="#">Songs using this instrument</a></li>
+      <li><a id="view-instrument" href="#">View</a></li>
+      <li><a id="fork-instrument" href="#">Fork</a></li>
+      <li><a id="derived-instruments" href="#">Derived</a></li>
+      <li><a id="instrument-uses" href="#">Uses</a></li>
     </ul>
   </div>
 
@@ -42,6 +43,9 @@
     <audio id="music-audio" controls></audio>
   </div>
 
+  <div>
+    <input id="song-name" type="text"/>
+  </div>
   <div>
     <a id="new-track" class="button" href="#">New track</a>
   </div>

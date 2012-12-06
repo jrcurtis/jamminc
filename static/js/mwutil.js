@@ -151,7 +151,7 @@ mw.flash = function (message) {
     flash.hide();
     flash
         .html(message)
-        .append('<span class="close">&times;</span>')
+        .append('<div class="close"></div>')
         .slideDown();
     setTimeout(function () { flash.fadeOut(); }, 5000);
 };

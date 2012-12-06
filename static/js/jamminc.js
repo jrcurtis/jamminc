@@ -363,10 +363,13 @@ jamminc.Instrument = function (spec) {
     };
 
     this._delete = function () {
+        if (local) {
+            return;
+        }
+
         $.ajax({
-            url: API_URL,
+            url: API_URL + "?" + $.param({ inst_id: id }),
             type: "DELETE",
-            data: { inst_id: id },
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Instrument deleted");
             }
@@ -519,10 +522,14 @@ jamminc.Track = function (spec) {
     };
 
     this._delete = function () {
+        if (local) {
+            return;
+        }
+
+        console.log("deleting track", id);
         $.ajax({
-            url: API_URL,
+            url: API_URL + "?" + $.param({ track_id: id }),
             type: "DELETE",
-            data: { track_id: id },
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Track deleted");
             }
@@ -552,7 +559,7 @@ jamminc.Song = function (spec) {
 
     var API_URL = "/jamminc/music/song.json";
     var id, local;
-    var name, tracks, curInstrument, instruments;
+    var tracks, instruments;
 
     Object.defineProperties(this, {
         id: {
@@ -567,7 +574,11 @@ jamminc.Song = function (spec) {
                     tracks[i].roll.instruments = instruments;
                 }
             }
-        }
+        },
+    });
+
+    mw.synchronize(this, {
+        name: $("#song-name").get(0)
     });
 
     this.generateAudio = function (handler) {
@@ -611,18 +622,25 @@ jamminc.Song = function (spec) {
         var track = new jamminc.Track({ song: that, id: id });
         track.roll.instruments = instruments;
         tracks.push(track);
+
         var li = document.createElement("li");
         $(li)
             .append(track.element)
             .appendTo("#tracks-ui");
         track.roll.update();
+
+        $(track.roll).on("remove.jammincSong", function () {
+            track._delete();
+            $(li).fadeOut();
+            mw.arrayRemove(tracks, track);
+        });
     };
 
     this.create = function () {
         $.ajax({
             url: API_URL,
             type: "POST",
-            data: { name: name },
+            data: { name: that.name },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Song couldn't be created: " + data.error);
@@ -645,7 +663,7 @@ jamminc.Song = function (spec) {
                 if (data.error) {
                     mw.flash("Couldn't load song: " + data.error);
                 } else {
-                    name = data.name;
+                    that.name = data.name;
                     var i;
                     for (i = 0; i < data.tracks.length; i++) {
                         that.addTrack(data.tracks[i]);
@@ -667,14 +685,10 @@ jamminc.Song = function (spec) {
             tracks[i].save();
         }
 
-        if (curInstrument) {
-            curInstrument.save();
-        }
-
         $.ajax({
             url: API_URL,
             type: "PUT",
-            data: { song_id: id, name: name },
+            data: { song_id: id, name: that.name },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't save song: " + data.error);
@@ -686,10 +700,13 @@ jamminc.Song = function (spec) {
     };
 
     this._delete = function () {
+        if (local) {
+            return;
+        }
+
         $.ajax({
-            url: API_URL,
+            url: API_URL + "?" + $.param({ song_id: id }),
             type: "DELETE",
-            data: { song_id: id },
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Song deleted");
             }
@@ -699,9 +716,8 @@ jamminc.Song = function (spec) {
     var init = function () {
         local = false;
         id = spec.id || 0;
-        name = "My Song";
+        that.name = "My Song";
         tracks = [];
-        curInstrument = null;
 
         if (spec.id) {
             that.load();
@@ -781,6 +797,11 @@ jamminc.InstrumentManager = function (spec) {
             .on("change.jammincInstrumentManager", function () {
                 that.updateIndex();
             });
+
+        $("#view-instrument").attr("href", "/jamminc/music/view/instrument/" + id);
+        $("#fork-instrument").attr("href", "/jamminc/music/edit/instrument/" + id + "?fork=1");
+        $("#derived-instruments").attr("href", "/jamminc/music/browse/instruments?derived=" + id);
+        $("#instrument-uses").attr("href", "/jamminc/music/browse/songs?use=" + id);
     };
 
     this.saveCurrent = function () {
@@ -859,7 +880,7 @@ $(function () {
             id = 0;
         }
         jamminc.instrumentManager.makeCurrent(id);
-        $(".song-controls").css({ display: "none" });
+        jamminc.song = new jamminc.Song();
     }
 
     $("#play-song").click(function (event) {
