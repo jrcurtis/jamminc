@@ -1,10 +1,13 @@
 
 {{extend 'layout.html'}}
 
+{{ include_songs = include_instruments = include_tracks = False }}
+
 {{block before_list}}
 
 {{end}}
 
+{{ if include_songs or include_instruments or include_tracks: }}
 <ul class="browse-list">
   {{ if include_songs: }}
       <li>
@@ -20,12 +23,12 @@
         <ol class="music-list">
           {{ for row in songs: }}
               <li>
-                <img class="music-art" src="/jamminc/static/images/default-art.png"/>
                 <a href="{{= URL('music', 'view', args=['song', row.songs.id]) }}">
+                  <img class="music-art" src="/jamminc/static/images/default-art.png"/>
                   {{= row.songs.name }}
                 </a>
                 <br/>by
-                <a href="{{= URL('default', 'profile', args=[row.songs.author]) }}">
+                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
                   {{= row.auth_user.username }}
                 </a>
               </li>
@@ -35,6 +38,9 @@
         {{ if not songs: }}
             No songs to display.
         {{ pass }}
+
+        {{block songs_extra}}
+        {{end}}
       </li>
   {{ pass }}
 
@@ -52,12 +58,12 @@
         <ol class="music-list">
           {{ for row in instruments: }}
               <li>
-                <img class="music-art" src="/jamminc/static/images/default-art.png"/>
                 <a href="{{= URL('music', 'view', args=['instrument', row.instruments.id]) }}">
+                  <img class="music-art" src="/jamminc/static/images/default-art.png"/>
                   {{= row.instruments.name }}
                 </a>
                 <br/>by
-                <a href="{{= URL('default', 'profile', args=[row.instruments.author]) }}">
+                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
                   {{= row.auth_user.username }}
                 </a>
               </li>
@@ -67,6 +73,9 @@
         {{ if not instruments: }}
             No instruments to display.
         {{ pass }}
+
+        {{block instruments_extra}}
+        {{end}}
       </li>
   {{ pass }}
 
@@ -81,9 +90,13 @@
         {{ if not tracks: }}
             No tracks to display.
         {{ pass }}
+
+        {{block tracks_extra}}
+        {{end}}
       </li>
   {{ pass }}
 </ul>
+{{ pass }}
 
 {{block after_list}}
 

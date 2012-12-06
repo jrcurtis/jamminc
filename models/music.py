@@ -59,3 +59,33 @@ db.define_table(
           writable=False, readable=False),
     Field('created', 'datetime', default=request.utcnow,
           writable=False, readable=False))
+
+import math
+
+def browse_page(table, query):
+    if table not in [db.songs, db.instruments, db.tracks]:
+        raise ArgumentError("Can't create page for table: " + str(table))
+
+    dbset = db(query)
+    count = dbset.count()
+
+    page_length = 20
+    pages = math.ceil(count / float(page_length))
+    page = request.vars[table._tablename + '_p'] or 0
+    page = min(pages - 1, max(0, page))
+    limit = (page_length * page, (page_length + 1) * page)
+
+    sort_field = request.vars[table._tablename + '_s']
+    if sort_field not in ['rating', 'views']:
+        sort_field = 'created'
+
+    entries = dbset.select(
+        table.id, table.name,
+        db.auth_user.id, db.auth_user.name,
+        orderby=table[sort_field], limitby=limit)
+
+    return {
+        table._tablename: entries,
+        table._tablename + '_page': page,
+        table._tablename + '_end': page == pages
+        }

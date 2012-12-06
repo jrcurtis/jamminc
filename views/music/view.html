@@ -1,85 +1,56 @@
 
-{{extend 'layout.html'}}
+{{extend 'browse-list.html'}}
 
-{{ thing = song if song else instrument 
-   thing_type = 'song' if song else 'instrument' }}
+{{block before_list}}
+    {{ thing = song if song else instrument 
+       thing_type = 'song' if song else 'instrument'
 
-<div class="ui-box">
-  <h2>{{= thing.name }}</h2>
-  {{ if auth.user_id == author.id: }}
-      <a href="{{= URL('music', 'edit', args=[thing_type, thing.id]) }}">
-        edit
-      </a>
-  {{ pass }}
-  <div>
-    By
-    <a href="{{= URL('default', 'profile', args=[author.id]) }}">
-      {{= author.username }}
-    </a>
-  </div>
-  <div>Created {{= thing.created }}</div>
-  <audio controls></audio>
-  <img class="view-art" src="/jamminc/static/images/default-art.png"/>
-  <span class="description">
-    {{= thing.description }}
-  </span>
-  <div class="clearfix"></div>
-</div>
+       if song:
+           include_instruments = True
+           include_tracks = True
+       pass
+    }}
 
-{{ if song: }}
-    <ul class="browse-list">
-      <li>
-        <h2>Instruments</h2>
-        <ol class="music-list">
-          {{ for row in instruments: }}
-              <li>
-                <img class="music-art" src="/jamminc/static/images/default-art.png"/>
-                <a href="{{= URL('music', 'view', args=['instrument', row.instruments.id]) }}">
-                  {{= row.instruments.name }}
-                </a>
-                <br/>by
-                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
-                  {{= row.auth_user.username }}
-                </a>
-              </li>
-          {{ pass }}
-        </ol>
-        <div class="clearfix"></div>
-        {{ if not instruments: }}
-            No instruments to display.
-        {{ pass }}
-      </li>
-
-      <li>
-        <h2>Tracks</h2>
-        <ol>
-          {{ for row in tracks: }}
-              <li>{{= row.name }}</li>
-          {{ pass }}
-        </ol>
-        <div class="clearfix"></div>
-        {{ if not tracks: }}
-            No tracks to display.
-        {{ pass }}
-      </li>
-    </ul>
-{{ pass }}
-
-<h3>Comments</h3>
-<ol class="comments">
-{{ for row in comments: }}
-    <li>
-      <div class="sidebar">
-        {{= row.auth_user.username }}
-        <img src="/jamminc/static/images/default-avatar.png"/>
+    <div class="ui-box">
+      <h2>{{= thing.name }}</h2>
+      {{ if auth.user_id == author.id: }}
+          <a href="{{= URL('music', 'edit', args=[thing_type, thing.id]) }}">
+            edit
+          </a>
+      {{ pass }}
+      <div>
+        By
+        <a href="{{= URL('default', 'profile', args=[author.id]) }}">
+          {{= author.username }}
+        </a>
       </div>
-      <div class="comment">{{= row.comments.text }}</div>
-    </li>
-{{ pass }}
-</ol>
-{{ if not comments: }}
-    No comments yet.
-{{ pass }}
-<br/>
-{{= comment_form }}
+      <div>Created {{= thing.created }}</div>
+      <audio controls></audio>
+      <img class="view-art" src="/jamminc/static/images/default-art.png"/>
+      <span class="description">
+        {{= thing.description or 'No description.' }}
+      </span>
+      <div class="clearfix"></div>
+    </div>
+{{end}}
+
+{{block after_list}}
+    <h3>Comments</h3>
+    <ol class="comments">
+    {{ for row in comments: }}
+        <li>
+          <div class="sidebar">
+            {{= row.auth_user.username }}
+            <img src="/jamminc/static/images/default-avatar.png"/>
+          </div>
+          <div class="comment">{{= row.comments.text }}</div>
+        </li>
+    {{ pass }}
+    </ol>
+    {{ if not comments: }}
+        No comments yet.
+    {{ pass }}
+    <br/>
+    {{= comment_form }}
+{{end}}
 
