@@ -38,6 +38,7 @@ pianoroll.PianoRoll = function (spec) {
     var notes, noteElements, noteIcons;
     var instruments;
     var trackNameInput, instrumentSelect, volumeSlider, panSlider;
+    var snapping, snapPixels;
 
     Object.defineProperties(this, {
         element: {
@@ -48,6 +49,21 @@ pianoroll.PianoRoll = function (spec) {
             set: function (is) {
                 instruments = is;
                 mw.fillSelect(instrumentSelect, instruments);
+            }
+        },
+        snapping: {
+            get: function () { return snapping; },
+            set: function (s) {
+                snapping = s;
+                snapPixels = snapping == 0 ? 1 : beatWidth * beatsPerMeasure * snapping;
+
+                notes.forEach(function (note) {
+                    if (note.element) {
+                        $(note.element)
+                            .draggable("option", "grid", [snapPixels, noteHeight + notePadding])
+                            .resizable("option", "grid", [snapPixels, 0]);
+                    }
+                });
             }
         }
     });
@@ -70,17 +86,7 @@ pianoroll.PianoRoll = function (spec) {
     };
 
     var cmpNote = function (a, b) {
-        if (a.pitch < b.pitch) {
-            return -1;
-        } else if (a.pitch > b.pitch) {
-            return 1;
-        } else if (a.time + a.duration < b.time) {
-            return -1;
-        } else if (a.time > b.time + b.duration) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return mw.cmp(a.pitch, b.pitch) || mw.cmp(a.time, b.time);
     };
 
     var makeGrid = function () {
@@ -159,6 +165,19 @@ pianoroll.PianoRoll = function (spec) {
             pan: panSlider
         });
 
+        var snapSelect = mw.makeSelect([
+            ["No snapping", 0],
+            ["Whole note", 1],
+            ["1/2 note", 1/2],
+            ["1/4 note", 1/4],
+            ["1/8 note", 1/8]
+        ]);
+        $(snapSelect)
+            .css({ width: "90%" })
+            .change(function (event) {
+                that.snapping = snapSelect.value;
+            });
+
         var closeButton = $(document.createElement("div"))
             .attr("class", "close")
             .click(function (event) {
@@ -169,7 +188,8 @@ pianoroll.PianoRoll = function (spec) {
             [["Name", trackNameInput],
              ["Instrument", instrumentSelect],
              ["Volume", volumeSlider],
-             ["Pan", panSlider]],
+             ["Pan", panSlider],
+             ["Snap", snapSelect]],
             [{ textAlign: "right", paddingRight: "10px" },
              { textAlign: "left" }]);
 
@@ -183,16 +203,12 @@ pianoroll.PianoRoll = function (spec) {
             })
             .append(closeButton, settingsTable);
 
-        noteIcons = $(pianoroll.noteIcons)
-            .clone()
-            .appendTo(element)
-            .get(0);
-
         scrollContainer = document.createElement("div");
         $(scrollContainer)
             .css({
                 overflow: "scroll",
-                height: (12 * (noteHeight + notePadding)) + "px"
+                height: (12 * (noteHeight + notePadding)) + "px",
+                position: "relative"
             })
             .append(element)
             .scroll(function (event) {
@@ -204,6 +220,11 @@ pianoroll.PianoRoll = function (spec) {
                         opacity: opacity
                     });
             });
+
+        noteIcons = $(pianoroll.noteIcons)
+            .clone()
+            .appendTo(scrollContainer)
+            .get(0);
 
         scaleContainer = document.createElement("div");
         $(scaleContainer)
@@ -229,7 +250,7 @@ pianoroll.PianoRoll = function (spec) {
         var midiNote = screenToMidiNote(event.offsetY);
         var time = screenToTime(event.offsetX);
 
-        currentNote = new pianoroll.Note(midiNote, time, 1);
+        currentNote = new pianoroll.Note(midiNote, time, 60 / beatsPerMinute);
         that.addNote(currentNote);
     };
 
@@ -246,14 +267,15 @@ pianoroll.PianoRoll = function (spec) {
         var left = timeToScreen(note.time);
         var width = timeToScreen(note.duration);
 
-        note.element = $(document.createElement("div"))
+        note.element = document.createElement("div");
+        $(note.element)
             .data("pianorollNote", note)
             .attr("class", "music-note")
             .css({
                 top: top,
                 left: left,
                 width: width,
-                height: noteHeight,
+                height: noteHeight - 2,
                 position: "absolute"
             })
             .mousedown(function (e) { e.stopPropagation(); })
@@ -265,14 +287,14 @@ pianoroll.PianoRoll = function (spec) {
             .resizable({
                 containment: "parent",
                 handles: "w, e",
-                resize: handleNoteChange
+                resize: handleNoteChange,
+                grid: [snapPixels, 0]
             })
             .draggable({
                 containment: "parent",
-                grid: [1, noteHeight + notePadding],
+                grid: [snapPixels, noteHeight + notePadding],
                 drag: handleNoteChange
-            })
-            .get(0);
+            });
 
         notes.push(note);
         noteElements.push(note.element);
@@ -357,14 +379,15 @@ pianoroll.PianoRoll = function (spec) {
     var init = function () {
         makeUI();
 
+        notes = [];
+        noteElements = [];
+
         that.instruments = spec.instruments || [];
         that.trackName = "track";
         that.instrument = 1;
         that.volume = 1;
         that.pan = 0;
-
-        notes = [];
-        noteElements = [];
+        that.snapping = 0;
     };
     init();
 };

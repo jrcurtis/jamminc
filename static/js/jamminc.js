@@ -526,7 +526,6 @@ jamminc.Track = function (spec) {
             return;
         }
 
-        console.log("deleting track", id);
         $.ajax({
             url: API_URL + "?" + $.param({ track_id: id }),
             type: "DELETE",

@@ -6,12 +6,13 @@
 .music-note {
     position: absolute;
     background-color: #494;
+    border: solid 1px #373;
 }
 
 .pianoroll {
     position: relative;
     background-color: #AAA;
-    padding-left: 20px;
+    margin-left: 20px;
 }
 
 .pianoroll-svg {
