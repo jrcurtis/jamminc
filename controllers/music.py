@@ -1,17 +1,6 @@
 
 def index():
-    return_data =  {
-        # 'songs': db(db.songs.author == auth.user_id).select(
-        #     db.songs.id, db.songs.name,
-        #     db.auth_user.id, db.auth_user.username,
-        #     orderby=db.songs.rating,
-        #     limitby=(0, 10)),
-        # 'instruments': db(db.instruments.author == auth.user_id).select(
-        #     db.instruments.id, db.instruments.name,
-        #     db.auth_user.id, db.auth_user.username,
-        #     orderby=db.instruments.rating,
-        #     limitby=(0, 10)),
-        }
+    return_data =  {}
 
     return_data.update(browse_page({
                 'songs': db.songs.author == auth.user_id,

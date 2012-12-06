@@ -18,9 +18,9 @@
         {{ if not is_track: }}
             Sort by: 
             <ul class="button-group">
-              <li><a href="{{= URL(vars={ type + '_s': 'views' }) }}">Views</a></li>
-              <li><a href="{{= URL(vars={ type + '_s': 'rating' }) }}">Rating</a></li>
-              <li><a href="{{= URL(vars={ type + '_s': 'created' }) }}">Date</a></li>
+              <li><a href="{{= data['views'] }}">Views</a></li>
+              <li><a href="{{= data['rating'] }}">Rating</a></li>
+              <li><a href="{{= data['created'] }}">Date</a></li>
             </ul>
         {{ pass }}
 
@@ -45,35 +45,14 @@
         <div class="clearfix"></div>
 
         <div>
-            {{ if data['page'] != 0: }}
-                <a href="{{= URL(vars={ type + '_p': 0,
-                                        type + '_s': data['sort'] }) }}">
-                  &lt;&lt; First
-                </a>
-                <a href="{{= URL(vars={ type + '_p': data['page'] - 1,
-                                        type + '_s': data['sort'] }) }}">
-                  &lt; Previous
-                </a>
-            {{ pass }}
+          {{= data['first'] }}
+          {{= data['prev'] }}
+          {{= data['next'] }}
+          {{= data['last'] }}
 
-            {{ if data['page'] != 0 and data['page'] != data['pages'] - 1: }}
-                |
-            {{ pass }}
-
-            {{ if data['page'] != data['pages'] - 1: }}
-                <a href="{{= URL(vars={ type + '_p': data['page'] + 1,
-                                        type + '_s': data['sort'] }) }}">
-                  Next &gt;
-                </a>
-                <a href="{{= URL(vars={ type + '_p': data['pages'],
-                                        type + '_s': data['sort'] }) }}">
-                  Last &gt;&gt;
-                </a>
-            {{ pass }}
-
-            {{ if not data['entries']: }}
-                No {{= type }} to display.
-            {{ pass }}
+          {{ if not data['entries']: }}
+              No {{= type }} to display.
+          {{ pass }}
         </div>
 
         {{= data.get('extra', '') }}
