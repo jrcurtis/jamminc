@@ -1,17 +1,24 @@
 
 def index():
-    return {
-        'songs': db(db.songs.author == auth.user_id).select(
-            db.songs.id, db.songs.name,
-            db.auth_user.id, db.auth_user.username,
-            orderby=db.songs.rating,
-            limitby=(0, 10)),
-        'instruments': db(db.instruments.author == auth.user_id).select(
-            db.instruments.id, db.instruments.name,
-            db.auth_user.id, db.auth_user.username,
-            orderby=db.instruments.rating,
-            limitby=(0, 10)),
+    return_data =  {
+        # 'songs': db(db.songs.author == auth.user_id).select(
+        #     db.songs.id, db.songs.name,
+        #     db.auth_user.id, db.auth_user.username,
+        #     orderby=db.songs.rating,
+        #     limitby=(0, 10)),
+        # 'instruments': db(db.instruments.author == auth.user_id).select(
+        #     db.instruments.id, db.instruments.name,
+        #     db.auth_user.id, db.auth_user.username,
+        #     orderby=db.instruments.rating,
+        #     limitby=(0, 10)),
         }
+
+    return_data.update(browse_page({
+                'songs': db.songs.author == auth.user_id,
+                'instruments': db.instruments.author == auth.user_id
+                }))
+
+    return return_data
 
 def edit():
     return_data = {
@@ -44,18 +51,24 @@ def edit():
     return return_data
 
 def browse():
-    return {
-        'songs': db(db.songs).select(
-            db.songs.id, db.songs.name,
-            db.auth_user.id, db.auth_user.username,
-            orderby=db.songs.rating,
-            limitby=(0, 10)),
-        'instruments': db(db.instruments).select(
-            db.instruments.id, db.instruments.name,
-            db.auth_user.id, db.auth_user.username,
-            orderby=db.instruments.rating,
-            limitby=(0, 10)),
-        }
+    return_data = {}
+
+    if len(request.args) == 1:
+        if request.args[0] == 'songs':
+            pass
+        elif request.args[0] == 'instruments':
+            pass
+        else:
+            raise HTTP(404)
+    elif len(request.args) > 1:
+        raise HTTP(404)
+
+    return_data.update(browse_page({
+                'songs': db.songs,
+                'instruments': db.instruments
+                }))
+
+    return return_data
 
 def view():
     return_data = {}
@@ -65,7 +78,7 @@ def view():
     if len(request.args) != 2:
         raise HTTP(404)
 
-    if request.args[0] == 'instrument':
+    if request.args[0] == 'instruments':
         instrument = (
             db(db.instruments.id == request.args[1])
             .select(db.instruments.id, db.instruments.name,
@@ -84,9 +97,11 @@ def view():
             .select(db.comments.text, db.comments.created,
                     db.auth_user.id, db.auth_user.username))
 
+        return_data['browse_data'] = {}
+
         db.comments.instrument.default = instrument.id
 
-    elif request.args[0] == 'song':
+    elif request.args[0] == 'songs':
         song = (
             db(db.songs.id == request.args[1])
             .select(db.songs.id, db.songs.name, db.songs.author,
@@ -99,15 +114,12 @@ def view():
         return_data['song'] = song
         return_data['author'] = db.auth_user[song.author]
 
-        return_data['tracks'] = (
-            db(db.tracks.song == song.id)
-            .select(db.tracks.name))
-
-        return_data['instruments'] = (
-            db((db.tracks.song == song.id)
-               & (db.tracks.instrument == db.instruments.id))
-            .select(db.instruments.id, db.instruments.name,
-                    db.auth_user.id, db.auth_user.username))
+        return_data.update(browse_page({
+                    'tracks': db.tracks.song == song.id,
+                    'instruments': (
+                        (db.tracks.song == song.id)
+                        & (db.tracks.instrument == db.instruments.id))
+                    }))
 
         db.comments.song.default = song.id
 

@@ -62,30 +62,48 @@ db.define_table(
 
 import math
 
-def browse_page(table, query):
-    if table not in [db.songs, db.instruments, db.tracks]:
-        raise ArgumentError("Can't create page for table: " + str(table))
+def browse_page(queries):
+    browse_lists = [
+        ('songs', db.songs, queries.get('songs', None)),
+        ('instruments', db.instruments, queries.get('instruments', None)),
+        ('tracks', db.tracks, queries.get('tracks', None))
+        ]
 
-    dbset = db(query)
-    count = dbset.count()
+    browse_data = {}
 
-    page_length = 20
-    pages = math.ceil(count / float(page_length))
-    page = request.vars[table._tablename + '_p'] or 0
-    page = min(pages - 1, max(0, page))
-    limit = (page_length * page, (page_length + 1) * page)
+    for tablename, table, query in browse_lists:
+        if query is None:
+            continue
+        
+        logger.info('paging {} query {}'.format(tablename, query))
+        dbset = db(query)
+        count = dbset.count()
 
-    sort_field = request.vars[table._tablename + '_s']
-    if sort_field not in ['rating', 'views']:
-        sort_field = 'created'
+        page_length = 10
+        pages = int(math.ceil(count / float(page_length)))
+        try:
+            page = int(request.vars[tablename + '_p'] or 0)
+        except ValueError:
+            page = 0
+        page = min(pages - 1, max(0, page))
+        index = page_length * page
+        limit = (index , index + page_length)
 
-    entries = dbset.select(
-        table.id, table.name,
-        db.auth_user.id, db.auth_user.name,
-        orderby=table[sort_field], limitby=limit)
+        sort_field = request.vars[tablename + '_s']
+        if sort_field not in ['rating', 'views']:
+            sort_field = 'created'
 
-    return {
-        table._tablename: entries,
-        table._tablename + '_page': page,
-        table._tablename + '_end': page == pages
-        }
+        entries = dbset.select(
+            table.id, table.name,
+            db.auth_user.id, db.auth_user.username,
+            orderby=table[sort_field], limitby=limit)
+
+        browse_data[tablename] = {
+            'entries': entries,
+            'page': page,
+            'pages': pages,
+            'sort': sort_field
+            }
+
+    return { 'browse_data': browse_data }
+

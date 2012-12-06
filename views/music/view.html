@@ -4,11 +4,6 @@
 {{block before_list}}
     {{ thing = song if song else instrument 
        thing_type = 'song' if song else 'instrument'
-
-       if song:
-           include_instruments = True
-           include_tracks = True
-       pass
     }}
 
     <div class="ui-box">

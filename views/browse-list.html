@@ -1,98 +1,82 @@
 
 {{extend 'layout.html'}}
 
-{{ include_songs = include_instruments = include_tracks = False }}
+{{include}}
 
 {{block before_list}}
 
 {{end}}
 
-{{ if include_songs or include_instruments or include_tracks: }}
+{{ if browse_data: }}
 <ul class="browse-list">
-  {{ if include_songs: }}
+  {{ for type, data in browse_data.items(): }}
+      {{ is_track = type == 'tracks' }}
+
       <li>
-        <h2>Songs</h2>
-        <span>
-          Sort by: 
-          <ul class="button-group">
-            <li><a href="#">Views</a></li>
-            <li><a href="#">Rating</a></li>
-            <li><a href="#">Date</a></li>
-          </ul>
-        </span>
-        <ol class="music-list">
-          {{ for row in songs: }}
+        <h2>{{= type.capitalize() }}</h2>
+
+        {{ if not is_track: }}
+            Sort by: 
+            <ul class="button-group">
+              <li><a href="{{= URL(vars={ type + '_s': 'views' }) }}">Views</a></li>
+              <li><a href="{{= URL(vars={ type + '_s': 'rating' }) }}">Rating</a></li>
+              <li><a href="{{= URL(vars={ type + '_s': 'created' }) }}">Date</a></li>
+            </ul>
+        {{ pass }}
+
+        <ol {{= XML('class="music-list"') if not is_track else '' }}>
+          {{ for row in data['entries']: }}
               <li>
-                <a href="{{= URL('music', 'view', args=['song', row.songs.id]) }}">
-                  <img class="music-art" src="/jamminc/static/images/default-art.png"/>
-                  {{= row.songs.name }}
-                </a>
-                <br/>by
-                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
-                  {{= row.auth_user.username }}
-                </a>
+                {{ if not is_track: }}
+                    <a href="{{= URL('music', 'view', args=[type, row[type].id]) }}">
+                      <img class="music-art" src="/jamminc/static/images/default-art.png"/>
+                      {{= row[type].name }}
+                    </a>
+                    <br/>by
+                    <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
+                      {{= row.auth_user.username }}
+                    </a>
+                {{ else: }}
+                    {{= row[type].name }}
+                {{ pass }}
               </li>
           {{ pass }}
         </ol>
         <div class="clearfix"></div>
-        {{ if not songs: }}
-            No songs to display.
-        {{ pass }}
 
-        {{block songs_extra}}
-        {{end}}
-      </li>
-  {{ pass }}
-
-  {{ if include_instruments: }}
-      <li>
-        <h2>Instruments</h2>
-        <span>
-          Sort by: 
-          <ul class="button-group">
-            <li><a href="#">Views</a></li>
-            <li><a href="#">Rating</a></li>
-            <li><a href="#">Date</a></li>
-          </ul>
-        </span>
-        <ol class="music-list">
-          {{ for row in instruments: }}
-              <li>
-                <a href="{{= URL('music', 'view', args=['instrument', row.instruments.id]) }}">
-                  <img class="music-art" src="/jamminc/static/images/default-art.png"/>
-                  {{= row.instruments.name }}
+        <div>
+            {{ if data['page'] != 0: }}
+                <a href="{{= URL(vars={ type + '_p': 0,
+                                        type + '_s': data['sort'] }) }}">
+                  &lt;&lt; First
                 </a>
-                <br/>by
-                <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
-                  {{= row.auth_user.username }}
+                <a href="{{= URL(vars={ type + '_p': data['page'] - 1,
+                                        type + '_s': data['sort'] }) }}">
+                  &lt; Previous
                 </a>
-              </li>
-          {{ pass }}
-        </ol>
-        <div class="clearfix"></div>
-        {{ if not instruments: }}
-            No instruments to display.
-        {{ pass }}
+            {{ pass }}
 
-        {{block instruments_extra}}
-        {{end}}
-      </li>
-  {{ pass }}
+            {{ if data['page'] != 0 and data['page'] != data['pages'] - 1: }}
+                |
+            {{ pass }}
 
-  {{ if include_tracks: }}
-      <li>
-        <h2>Tracks</h2>
-        <ol>
-          {{ for row in tracks: }}
-              <li>{{= row.name }}</li>
-          {{ pass }}
-        </ol>
-        {{ if not tracks: }}
-            No tracks to display.
-        {{ pass }}
+            {{ if data['page'] != data['pages'] - 1: }}
+                <a href="{{= URL(vars={ type + '_p': data['page'] + 1,
+                                        type + '_s': data['sort'] }) }}">
+                  Next &gt;
+                </a>
+                <a href="{{= URL(vars={ type + '_p': data['pages'],
+                                        type + '_s': data['sort'] }) }}">
+                  Last &gt;&gt;
+                </a>
+            {{ pass }}
 
-        {{block tracks_extra}}
-        {{end}}
+            {{ if not data['entries']: }}
+                No {{= type }} to display.
+            {{ pass }}
+        </div>
+
+        {{= data.get('extra', '') }}
       </li>
   {{ pass }}
 </ul>
@@ -102,5 +86,4 @@
 
 {{end}}
 
-{{include}}
 

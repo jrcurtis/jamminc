@@ -9,5 +9,7 @@ databases
 progress.log
 cache
 sessions
+private
 *.bak
+*.xcf
 
