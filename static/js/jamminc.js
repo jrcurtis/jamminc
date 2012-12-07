@@ -429,6 +429,11 @@ jamminc.Track = function (spec) {
         var graph = instrument.graph;
         var global = {};
         var sr = wav.getSampleRate();
+        var volume = roll.volume;
+        var pan = roll.pan;
+        var panLeft = pan < 0.5 ? 1 : -2 * pan + 2;
+        var panRight = pan > 0.5 ? 1 : 2 * pan;
+
         global.time = 0;
         global.sampleI = 0;
         global.lastSample = 0;
@@ -445,14 +450,17 @@ jamminc.Track = function (spec) {
             graph.initEval();
             for (i = 0; i < notes[noteI].duration * sr; i++) {
                 global.sampleI = sampleI + i;
-                sample = graph.evaluate(global);
+                sample = volume * graph.evaluate(global);
                 global.output.push(sample);
                 global.lastSample = sample;
                 global.time = i / sr;
             }
             graph.haltEval();
 
-            wav.write([global.output], sampleI);
+            wav.write(
+                [global.output.map(function (s) { return s * panLeft }),
+                 global.output.map(function (s) { return s * panRight })],
+                sampleI);
         }
     };
 
@@ -587,7 +595,7 @@ jamminc.Song = function (spec) {
                     || mw.cmp(t1.roll.instrument, t2.roll.instrument));
         });
 
-        var wav = new mwWAV.WAV();
+        var wav = new mwWAV.WAV({ channels: 2 });
         var trackI = 0;
 
         var gen = function () {

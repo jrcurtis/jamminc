@@ -152,6 +152,7 @@ pianoroll.PianoRoll = function (spec) {
             .slider({
                 min: 0,
                 max: 1,
+                value: 0.5,
                 step: 0.05,
                 change: function () {
                     pan = $(panSlider).slider("value");
