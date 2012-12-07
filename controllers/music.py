@@ -370,4 +370,32 @@ def songs():
 
     return locals()
 
+@request.restful()
+def description():
+    def GET(song_id=0, inst_id=0):
+        table, id = db.songs, song_id if song_id else db.instruments, inst_id
+        row = db(table.id == id).select(table.description).first()
+
+        return {
+            'description': row.description,
+            'error': 'Database error' if not row else None,
+            }
+
+    def PUT(description, song_id=0, inst_id=0):
+        table, id = db.songs, song_id if song_id else db.isntruments, inst_id
+        dbset = db((table.author == auth.user_id)
+                   & (table.id == id))
+        result = dbset.validate_and_update(table.description=description)
+
+        return { 'error': 'Database error' if result.error else None }
+    
+    return locals()
+
+@request.restful()
+def image():
+    def PUT(image, song_id=0, inst_id=0):
+        pass
+
+    return locals()
+
 
