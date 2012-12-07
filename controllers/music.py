@@ -208,15 +208,21 @@ def instruments():
 def instruments_list():
     def GET():
         if auth.user:
-            instruments_query = (
-                (db.instruments.author == auth.user_id)
-                | ((db.favorite_instruments.user == auth.user_id)
-                   & (db.favorite_instruments.instrument == db.instruments.id)))
+            instruments_query = db.instruments.author == auth.user_id
+            favorites_query = (
+                (db.favorite_instruments.user == auth.user_id)
+                & (db.favorite_instruments.instrument == db.instruments.id))
         else:
             instruments_query = db.instruments.author == 1
 
+        logger.info('user {} instruments {}'.format(
+                auth.user_id,
+                db(db.instruments.author == auth.user_id).count()))
+
         instruments = db(instruments_query).select(
             db.instruments.id, db.instruments.name).as_list()
+
+        logger.info('got these bitch {}'.format(instruments))
 
         return {
             'instruments': map(lambda r: [r['name'], r['id']], instruments)

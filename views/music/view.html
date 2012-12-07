@@ -22,8 +22,9 @@
         <span>Created {{= thing.created }}</span>
       </div>
       <br/>
-      <audio controls></audio>
       <img class="view-art" src="/jamminc/static/images/default-art.png"/>
+      <audio controls></audio>
+      <br/>
       <span class="description">
         {{= thing.description or 'No description.' }}
       </span>
@@ -37,7 +38,7 @@
     {{ for row in comments: }}
         <li>
           <div class="sidebar">
-            {{= row.auth_user.username }}
+            <span class="username">{{= row.auth_user.username }}</span>
             <img src="/jamminc/static/images/default-avatar.png"/>
           </div>
           <div class="comment">{{= row.comments.text }}</div>

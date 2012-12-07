@@ -150,9 +150,9 @@ pianoroll.PianoRoll = function (spec) {
         panSlider = document.createElement("div");
         $(panSlider)
             .slider({
-                min: -1,
+                min: 0,
                 max: 1,
-                step: 0.1,
+                step: 0.05,
                 change: function () {
                     pan = $(panSlider).slider("value");
                 }
@@ -256,9 +256,8 @@ pianoroll.PianoRoll = function (spec) {
 
     var handleNoteChange = function (event, ui) {
         var note = $(this).data("pianorollNote");
-        var position = $(this).position();
-        note.pitch = screenToMidiNote(position.top);
-        note.time = screenToTime(position.left);
+        note.pitch = screenToMidiNote(ui.position.top);
+        note.time = screenToTime(ui.position.left);
         note.duration = screenToTime($(this).width());
     };
 
@@ -288,12 +287,23 @@ pianoroll.PianoRoll = function (spec) {
                 containment: "parent",
                 handles: "w, e",
                 resize: handleNoteChange,
-                grid: [snapPixels, 0]
+                grid: [snapPixels, 0],
+                minWidth: beatWidth * beatsPerMeasure / 16,
+                start: function (event, ui) {
+                    var snapped = snapPixels
+                        * Math.round(ui.originalSize.width / snapPixels);
+                    ui.originalSize.width = snapped;
+                }
             })
             .draggable({
                 containment: "parent",
                 grid: [snapPixels, noteHeight + notePadding],
                 drag: handleNoteChange
+            })
+            .mousedown(function (event) {
+                var snapped = snapPixels
+                    * Math.round(parseInt(this.style.left, 10) / snapPixels);
+                this.style.left = snapped + "px";
             });
 
         notes.push(note);

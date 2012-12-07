@@ -13,7 +13,6 @@ $(function (event) {
 
     $(".music-list")
         .each(function (i) {
-            console.log("music list");
             var type, name;
             if ($(this).hasClass("songs")) {
                 type = "songs";
@@ -27,7 +26,6 @@ $(function (event) {
             $(this)
                 .find(".close")
                 .each(function (i) {
-                    console.log("adding click handler");
                     $(this)
                         .click(function (event) {
                             var $li = $(this).parents("li").first();
