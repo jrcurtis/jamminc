@@ -3,7 +3,7 @@
 
 {{block before_list}}
     {{ thing = song if song else instrument 
-       thing_type = 'song' if song else 'instrument'
+       thing_type = 'songs' if song else 'instruments'
     }}
 
     <div class="ui-box">
@@ -14,12 +14,14 @@
           </a>
       {{ pass }}
       <div>
-        By
-        <a href="{{= URL('default', 'profile', args=[author.id]) }}">
-          {{= author.username }}
-        </a>
+        <span>By
+          <a href="{{= URL('default', 'profile', args=[author.id]) }}">
+            {{= author.username }}
+          </a></span>
+        <br/>
+        <span>Created {{= thing.created }}</span>
       </div>
-      <div>Created {{= thing.created }}</div>
+      <br/>
       <audio controls></audio>
       <img class="view-art" src="/jamminc/static/images/default-art.png"/>
       <span class="description">

@@ -48,11 +48,11 @@
 }
 
 .note-icon-list>li {
-    width: 20px; /* width = pianoroll.noteHeight */
-    height: 10px; /* height = pianoroll.noteHeight / 2 */
+    width: 20px; /* width = height = pianoroll.noteHeight */
+    height: 20px;
     margin: 0px;
     margin-bottom: 3px; /* margin-bottom = pianoroll.notePadding */
-    padding: 5px 0px; /* padding = pianoroll.noteHeight / 4 */
+    line-height: 20px;
     background-color: #FFF;
     font-size: 10px;
     text-align: center;

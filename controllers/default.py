@@ -19,7 +19,12 @@ def index():
     return auth.wiki()
     """
 
-    return dict()
+    return {
+        'songs': db(db.songs).select(db.songs.id, db.songs.name,
+                                     orderby=db.songs.rating, limitby=(0, 5)),
+        'instruments': db(db.instruments).select(db.instruments.id, db.instruments.name,
+                                                 orderby=db.instruments.rating, limitby=(0, 5))
+        }
 
 
 def user():

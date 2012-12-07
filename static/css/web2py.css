@@ -2,14 +2,14 @@
 a {text-decoration:none; white-space:nowrap}
 a:hover {text-decoration:underline}
 a.button {text-decoration:none}
-h1,h2,h3,h4,h5,h6 {margin:0.5em 0 0.25em 0; display:block;
-  font-family:Helvetica}
-h1 {font-size:4.00em}
-h2 {font-size:3.00em}
-h3 {font-size:2.00em}
-h4 {font-size:1.50em}
-h5 {font-size:1.25em}
-h6 {font-size:1.12em}
+/* h1,h2,h3,h4,h5,h6 {margin:0.5em 0 0.25em 0; display:block; */
+/*   font-family:Helvetica} */
+/* h1 {font-size:4.00em} */
+/* h2 {font-size:3.00em} */
+/* h3 {font-size:2.00em} */
+/* h4 {font-size:1.50em} */
+/* h5 {font-size:1.25em} */
+/* h6 {font-size:1.12em} */
 th,label {font-weight:bold; white-space:nowrap;}
 td,th {text-align:left; padding:2px 5px 2px 5px}
 th {vertical-align:middle; border-right:1px solid white}
@@ -86,6 +86,7 @@ div.w2p_export_menu a, div.w2p_wiki_tags a, div.w2p_cloud a {margin-left:5px; pa
 #web2py_user_form td {vertical-align:top}
 
 /*********** web2py specific ***********/
+/*
 div.flash {
     font-weight:bold;
     display:none;
@@ -116,7 +117,7 @@ div.flash {
 }
 
 div.flash:hover { opacity:0.25; }
-
+*/
 div.error_wrapper {display:block}
 div.error {
     width: 298px;

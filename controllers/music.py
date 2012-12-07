@@ -19,17 +19,17 @@ def edit():
         redirect(URL('music', 'edit', args=['song']))
 
     elif len(request.args) == 1:
-        if request.args[0] == 'song':
+        if request.args[0] == 'songs':
             return_data['song_id'] = 'new'
-        elif request.args[0] == 'instrument':
+        elif request.args[0] == 'instruments':
             return_data['inst_id'] = 'new'
         else:
             raise HTTP(404)
 
     elif len(request.args) == 2:
-        if request.args[0] == 'song':
+        if request.args[0] == 'songs':
             return_data['song_id'] = request.args[1]
-        elif request.args[0] == 'instrument':
+        elif request.args[0] == 'instruments':
             return_data['inst_id'] = request.args[1]
         else:
             raise HTTP(404)
@@ -41,21 +41,22 @@ def edit():
 
 def browse():
     return_data = {}
+    items = {
+        'songs': db.songs,
+        'instruments': db.instruments
+        }
 
     if len(request.args) == 1:
         if request.args[0] == 'songs':
-            pass
+            del items['instruments']
         elif request.args[0] == 'instruments':
-            pass
+            del items['songs']
         else:
             raise HTTP(404)
     elif len(request.args) > 1:
         raise HTTP(404)
 
-    return_data.update(browse_page({
-                'songs': db.songs,
-                'instruments': db.instruments
-                }))
+    return_data.update(browse_page(items))
 
     return return_data
 
@@ -116,8 +117,8 @@ def view():
         raise HTTP(404)
 
     if auth.user:
-        comment_form = SQLFORM(db.comments)
-        comment_form.process()
+        crud.messages.record_created = 'Comment posted'
+        comment_form = crud.create(db.comments)
     else:
         comment_form = 'Log in to comment.'
 
@@ -136,11 +137,11 @@ def view():
     return return_data
 
 @request.restful()
-def instrument():
-    def GET(inst_id):
+def instruments():
+    def GET(id):
         return_data = {}
 
-        inst = db.instruments[inst_id]
+        inst = db.instruments[id]
 
         if inst is not None:
             return_data['name'] = inst.name
@@ -165,17 +166,17 @@ def instrument():
                             .format(result.errors))
             else:
                 db.commit()
-                return_data['inst_id'] = result.id
+                return_data['id'] = result.id
 
         return return_data
 
-    def PUT(inst_id, name, data):
+    def PUT(id, name, data):
         return_data = {}
 
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            inst_query = ((db.instruments.id == inst_id)
+            inst_query = ((db.instruments.id == id)
                           & (db.instruments.author == auth.user_id))
             result = db(inst_query).validate_and_update(name=name, data=data)
 
@@ -188,13 +189,13 @@ def instrument():
 
         return return_data
 
-    def DELETE(inst_id):
+    def DELETE(id):
         return_data = {}
         
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            inst_query = ((db.instruments.id == inst_id)
+            inst_query = ((db.instruments.id == id)
                           & (db.instruments.author == auth.user_id))
             db(inst_query).delete()
             db.commit()
@@ -204,16 +205,17 @@ def instrument():
     return locals()
 
 @request.restful()
-def instruments():
+def instruments_list():
     def GET():
-        instruments_query = db.instruments.author == auth.user_id
-        favorites_query = (
-            (db.favorite_instruments.user == auth.user_id)
-            & (db.favorite_instruments.instrument == db.instruments.id))
+        if auth.user:
+            instruments_query = (
+                (db.instruments.author == auth.user_id)
+                | ((db.favorite_instruments.user == auth.user_id)
+                   & (db.favorite_instruments.instrument == db.instruments.id)))
+        else:
+            instruments_query = db.instruments.author == 1
 
         instruments = db(instruments_query).select(
-            db.instruments.id, db.instruments.name).as_list()
-        instruments += db(favorites_query).select(
             db.instruments.id, db.instruments.name).as_list()
 
         return {
@@ -223,11 +225,11 @@ def instruments():
     return locals()
 
 @request.restful()
-def track():
-    def GET(track_id):
+def tracks():
+    def GET(id):
         return_data = {}
 
-        track = db.tracks[track_id]
+        track = db.tracks[id]
 
         if track is not None:
             return_data['name'] = track.name
@@ -253,17 +255,17 @@ def track():
                             .format(result.errors))
             else:
                 db.commit()
-                return_data['track_id'] = result.id
+                return_data['id'] = result.id
 
         return return_data
 
-    def PUT(track_id, name, data, inst_id=0):
+    def PUT(id, name, data, inst_id=0):
         return_data = {}
 
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            track_query = ((db.tracks.id == track_id)
+            track_query = ((db.tracks.id == id)
                            & (db.tracks.author == auth.user_id))
             result = db(track_query).validate_and_update(
                 name=name, data=data, instrument=inst_id)
@@ -277,13 +279,13 @@ def track():
 
         return return_data
 
-    def DELETE(track_id):
+    def DELETE(id):
         return_data = {}
         
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            track_query = ((db.tracks.id == track_id)
+            track_query = ((db.tracks.id == id)
                            & (db.tracks.author == auth.user_id))
             db(track_query).delete()
             db.commit()
@@ -293,15 +295,15 @@ def track():
     return locals()
 
 @request.restful()
-def song():
-    def GET(song_id):
+def songs():
+    def GET(id):
         return_data = {}
 
-        song = db.songs[song_id]
+        song = db.songs[id]
 
         if song is not None:
             return_data['name'] = song.name
-            tracks_query = db.tracks.song == song_id
+            tracks_query = db.tracks.song == id
             tracks = db(tracks_query).select(db.tracks.id)
             return_data['tracks'] = map(lambda r: r['id'], tracks.as_list())
         else:
@@ -324,17 +326,17 @@ def song():
                             .format(result.errors))
             else:
                 db.commit()
-                return_data['song_id'] = result.id
+                return_data['id'] = result.id
 
         return return_data
 
-    def PUT(song_id, name):
+    def PUT(id, name):
         return_data = {}
 
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            song_query = ((db.songs.id == song_id)
+            song_query = ((db.songs.id == id)
                           & (db.songs.author == auth.user_id))
             result = db(song_query).validate_and_update(name=name)
 
@@ -347,13 +349,13 @@ def song():
 
         return return_data
 
-    def DELETE(song_id):
+    def DELETE(id):
         return_data = {}
         
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
-            song_query = ((db.songs.id == song_id)
+            song_query = ((db.songs.id == id)
                           & (db.songs.author == auth.user_id))
             db(song_query).delete()
             db.commit()

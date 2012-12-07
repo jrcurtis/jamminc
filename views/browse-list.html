@@ -9,11 +9,11 @@
 
 {{ if browse_data: }}
 <ul class="browse-list">
-  {{ for type, data in browse_data.items(): }}
+  {{ for type, data in browse_data['items'].items(): }}
       {{ is_track = type == 'tracks' }}
 
       <li>
-        <h2>{{= type.capitalize() }}</h2>
+        <h3>{{= type.capitalize() }}</h3>
 
         {{ if not is_track: }}
             Sort by: 
@@ -24,13 +24,23 @@
             </ul>
         {{ pass }}
 
-        <ol {{= XML('class="music-list"') if not is_track else '' }}>
+        {{ list_class = 'music-list' if not is_track else '' }}
+        <ol class="{{= list_class }} {{= type }}">
           {{ for row in data['entries']: }}
               <li>
                 {{ if not is_track: }}
-                    <a href="{{= URL('music', 'view', args=[type, row[type].id]) }}">
-                      <img class="music-art" src="/jamminc/static/images/default-art.png"/>
+                    <a href="{{= URL('music', browse_data['handler'], args=[type, row[type].id]) }}">
+                      <div class="music-art">
+                      {{ if browse_data['editable']: }}
+                          <div class="close">{{= row[type].id }}</div>
+                      {{ pass }}
+
+                      <img src="/jamminc/static/images/default-art.png"/>
+                      <br/>
+                      </div>
+
                       {{= row[type].name }}
+
                     </a>
                     <br/>by
                     <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">

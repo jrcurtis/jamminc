@@ -60,6 +60,18 @@ db.define_table(
     Field('created', 'datetime', default=request.utcnow,
           writable=False, readable=False))
 
+response.menu = [
+    ['Browse', False, URL('music', 'browse'),
+     [['Songs', False, URL('music', 'browse', args=['songs'])],
+      ['Instruments', False, URL('music', 'browse', args=['instruments'])]]],
+    ['Create', False, URL('music', 'index'),
+     [['New song', False, URL('music', 'edit', args=['songs'])],
+      ['New instrument', False, URL('music', 'edit', args=['instruments'])]]],
+    ['About', False, URL('index'),
+     [['About Jamminc', False, URL('index')],
+      ['Documentation', False, URL('index')],
+      ['News', False, URL('default', 'news')]]]]
+
 import math
 
 def proto(*args):
@@ -75,8 +87,11 @@ def browse_page(queries):
         ('tracks', db.tracks, queries.get('tracks', None))
         ]
 
-    browse_data = {}
-    page_vars = {}
+    browse_data = {
+        'handler': 'view',
+        'editable': False,
+        'items': {},
+        }
 
     for tablename, table, query in browse_lists:
         if query is None:
@@ -99,30 +114,31 @@ def browse_page(queries):
         if sort_field not in ['rating', 'views']:
             sort_field = 'created'
 
-        page_vars[tablename + '_p'] = page
-        page_vars[tablename + '_s'] = sort_field
-
         entries = dbset.select(
             table.id, table.name,
             db.auth_user.id, db.auth_user.username,
             orderby=table[sort_field], limitby=limit)
 
-        browse_data[tablename] = {
+        browse_data['items'][tablename] = {
             'entries': entries,
             'page': page,
             'pages': pages,
             'sort': sort_field
             }
 
-    for tablename, data in browse_data.items():
-        if data['page'] != 0:
+    def updated_url(new_vars):
+        return URL(args=request.args,
+                   vars=proto(request.vars, new_vars))
+
+    for tablename, data in browse_data['items'].items():
+        if data['page'] != 0 and data['pages'] != 0:
             prev_data = { tablename + '_p': data['page'] - 1 }
             data['prev'] = A(
-                '<Previous', _href=URL(vars=proto(page_vars, prev_data)))
+                '<Previous', _href=updated_url(prev_data))
 
             first_data = { tablename + '_p': 0 }
             data['first'] = A(
-                '<<First', _href=URL(vars=proto(page_vars, first_data)))
+                '<<First', _href=updated_url(first_data))
         else:
             data['prev'] = ''
             data['first'] = ''
@@ -131,18 +147,18 @@ def browse_page(queries):
         if data['page'] != data['pages'] - 1:
             next_data = { tablename + '_p': data['page'] + 1 }
             data['next'] = A(
-                'Next>', _href=URL(vars=proto(page_vars, next_data)))
+                'Next>', _href=updated_url(next_data))
 
             last_data = { tablename + '_p': data['pages'] - 1 }
             data['last'] = A(
-                'Last>>', _href=URL(vars=proto(page_vars, last_data)))
+                'Last>>', _href=updated_url(last_data))
         else:
             data['next'] = ''
             data['last'] = ''
 
         for sort_field in ['created', 'rating', 'views']:
             sort_data = { tablename + '_s': sort_field }
-            data[sort_field] = URL(vars=proto(page_vars, sort_data))
+            data[sort_field] = updated_url(sort_data)
 
     return { 'browse_data': browse_data }
 

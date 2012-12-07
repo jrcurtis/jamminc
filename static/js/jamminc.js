@@ -261,7 +261,7 @@ jamminc.Instrument = function (spec) {
     var that = this;
 
 
-    var API_URL = "/jamminc/music/instrument.json";
+    var API_URL = "/jamminc/music/instruments.json";
     var id, local, ready;
     var graph, nameInput;
 
@@ -305,7 +305,7 @@ jamminc.Instrument = function (spec) {
                     mw.flash("Instrument couldn't be created: " + data.error);
                 } else {
                     local = false;
-                    id = data.inst_id;
+                    id = data.id;
                     mw.flash("New instrument created");
                 }
 
@@ -319,7 +319,7 @@ jamminc.Instrument = function (spec) {
         $.ajax({
             url: API_URL,
             type: "GET",
-            data: { inst_id: id },
+            data: { id: id },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't load instrument: " + data.error);
@@ -345,7 +345,7 @@ jamminc.Instrument = function (spec) {
             url: API_URL,
             type: "PUT",
             data: {
-                inst_id: id,
+                id: id,
                 name: that.name,
                 data: graph.serialize()
             },
@@ -368,7 +368,7 @@ jamminc.Instrument = function (spec) {
         }
 
         $.ajax({
-            url: API_URL + "?" + $.param({ inst_id: id }),
+            url: API_URL + "?" + $.param({ id: id }),
             type: "DELETE",
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Instrument deleted");
@@ -408,7 +408,7 @@ jamminc.Track = function (spec) {
     spec = spec || {};
     var that = this;
 
-    var API_URL = "/jamminc/music/track.json";
+    var API_URL = "/jamminc/music/tracks.json";
     var id, local;
     var song, roll;
 
@@ -471,7 +471,7 @@ jamminc.Track = function (spec) {
                     mw.flash("Track couldn't be created: " + data.error);
                 } else {
                     local = false;
-                    id = data.track_id;
+                    id = data.id;
                     mw.flash("New track created");
                 }
             }
@@ -482,7 +482,7 @@ jamminc.Track = function (spec) {
         $.ajax({
             url: API_URL,
             type: "GET",
-            data: { track_id: id },
+            data: { id: id },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't load track: " + data.error);
@@ -506,7 +506,7 @@ jamminc.Track = function (spec) {
             url: API_URL,
             type: "PUT",
             data: {
-                track_id: id,
+                id: id,
                 name: roll.trackName,
                 data: roll.serialize(),
                 inst_id: roll.instrument
@@ -527,7 +527,7 @@ jamminc.Track = function (spec) {
         }
 
         $.ajax({
-            url: API_URL + "?" + $.param({ track_id: id }),
+            url: API_URL + "?" + $.param({ id: id }),
             type: "DELETE",
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Track deleted");
@@ -556,7 +556,7 @@ jamminc.Song = function (spec) {
     spec = spec || {};
     var that = this;
 
-    var API_URL = "/jamminc/music/song.json";
+    var API_URL = "/jamminc/music/songs.json";
     var id, local;
     var tracks, instruments;
 
@@ -645,7 +645,7 @@ jamminc.Song = function (spec) {
                     mw.flash("Song couldn't be created: " + data.error);
                 } else {
                     local = false;
-                    id = data.song_id;
+                    id = data.id;
                     mw.flash("New song created");
                     that.save();
                 }
@@ -657,7 +657,7 @@ jamminc.Song = function (spec) {
         $.ajax({
             url: API_URL,
             type: "GET",
-            data: { song_id: id },
+            data: { id: id },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't load song: " + data.error);
@@ -687,7 +687,7 @@ jamminc.Song = function (spec) {
         $.ajax({
             url: API_URL,
             type: "PUT",
-            data: { song_id: id, name: that.name },
+            data: { id: id, name: that.name },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't save song: " + data.error);
@@ -704,7 +704,7 @@ jamminc.Song = function (spec) {
         }
 
         $.ajax({
-            url: API_URL + "?" + $.param({ song_id: id }),
+            url: API_URL + "?" + $.param({ id: id }),
             type: "DELETE",
             success: function (data, textStatus, jqXHR) {
                 mw.flash("Song deleted");
@@ -738,7 +738,7 @@ jamminc.InstrumentManager = function (spec) {
         var i, inst;
         for (i = 0; i < instruments.length; i++) {
             inst = instruments.at(i);
-            if (inst && inst.id.toString() === id) {
+            if (inst && inst.id == id) {
                 return true;
             }
         }
@@ -752,7 +752,6 @@ jamminc.InstrumentManager = function (spec) {
     };
 
     this.get = function (id) {
-        id = id.toString();
         if (id === "local") {
             return localInstrument;
         }
@@ -760,7 +759,7 @@ jamminc.InstrumentManager = function (spec) {
         var i, inst;
         for (i = 0; i < instruments.length; i++) {
             inst = instruments.at(i);
-            if (inst && inst.id.toString() === id) {
+            if (inst && inst.id == id) {
                 return instruments.at(i);
             }
         }
@@ -775,13 +774,14 @@ jamminc.InstrumentManager = function (spec) {
     };
 
     this.makeCurrent = function (id) {
-        if (currentInstrument && (currentInstrument.id === id)) {
+        if (currentInstrument && (currentInstrument.id == id)) {
             return;
         }
 
         if (localInstrument && (localInstrument === currentInstrument)) {
             if (confirm("If you load this instrument, your unsaved instrument will be lost!")) {
                 localInstrument = null;
+                that.updateIndex();
             } else {
                 return;
             }
@@ -797,8 +797,8 @@ jamminc.InstrumentManager = function (spec) {
                 that.updateIndex();
             });
 
-        $("#view-instrument").attr("href", "/jamminc/music/view/instrument/" + id);
-        $("#fork-instrument").attr("href", "/jamminc/music/edit/instrument/" + id + "?fork=1");
+        $("#view-instrument").attr("href", "/jamminc/music/view/instruments/" + id);
+        $("#fork-instrument").attr("href", "/jamminc/music/edit/instruments/" + id + "?fork=1");
         $("#derived-instruments").attr("href", "/jamminc/music/browse/instruments?derived=" + id);
         $("#instrument-uses").attr("href", "/jamminc/music/browse/songs?use=" + id);
     };
@@ -845,7 +845,7 @@ jamminc.InstrumentManager = function (spec) {
 
     this.loadInstruments = function () {
         $.ajax({
-            url: "/jamminc/music/instruments.json",
+            url: "/jamminc/music/instruments_list.json",
             type: "GET",
             success: function (data, textStatus, jqXHR) {
                 instrumentIndex = data.instruments;
@@ -871,14 +871,15 @@ $(function () {
 
     if (id = $("#song-id").text()) {
         if (id === "new") {
-            id = 0;
+            id = null;
         }
         jamminc.song = new jamminc.Song({ id: id });
     } else if (id = $("#inst-id").text()) {
         if (id === "new") {
-            id = 0;
+            jamminc.instrumentManager.create();
+        } else {
+            jamminc.instrumentManager.makeCurrent(id);
         }
-        jamminc.instrumentManager.makeCurrent(id);
         jamminc.song = new jamminc.Song();
     }
 

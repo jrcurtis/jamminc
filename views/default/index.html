@@ -2,20 +2,28 @@
 
 <ul id="popular" class="browse-list">
   <li>
-    <h2>Popular songs</h2>
+    <h3>Popular songs</h3>
     <ol>
-      <li><a href="{{= URL('music', 'instrument') }}">My song</a></li>
-      <li><a href="{{= URL('music', 'instrument') }}">A lovely song</a></li>
-      <li><a href="{{= URL('music', 'instrument') }}">A song for two</a></li>
+      {{ for row in songs: }}
+          <li>
+            <a href="{{= URL('music', 'view', args=['songs', row.id]) }}">
+              {{= row.name }}
+            </a>
+          </li>
+      {{ pass }}
     </ol>
   </li>
   
   <li>
-    <h2>Popular instruments</h2>
+    <h3>Popular instruments</h3>
     <ol>
-      <li><a href="{{= URL('music', 'instrument') }}">Groovy instrument</a></li>
-      <li><a href="{{= URL('music', 'instrument') }}">Bangin instrument</a></li>
-      <li><a href="{{= URL('music', 'instrument') }}">A really long name for an instrument</a></li>
+      {{ for row in instruments: }}
+          <li>
+            <a href="{{= URL('music', 'view', args=['instruments', row.id]) }}">
+              {{= row.name }}
+            </a>
+          </li>
+      {{ pass }}
     </ol>
   </li>
 </ul>

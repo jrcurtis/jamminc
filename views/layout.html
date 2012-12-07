@@ -39,7 +39,8 @@
 
     <!-- Other stuff -->
     {{
-    response.files.extend([URL('static','css/calendar.css'),
+    response.files.extend([URL('static', 'css/web2py.css'),
+                           URL('static','css/calendar.css'),
                            URL('static','js/calendar.js'),
                            URL('static','js/web2py.js')])
     response.include_meta()
@@ -55,18 +56,7 @@
     <div id="header">
       <a href="{{= URL('default', 'index') }}"><h1>Jamminc</h1></a>
 
-      {{=MENU(
-          [['Browse', False, URL('music', 'browse'),
-               [['Songs', False, URL('music', 'browse', args=['songs'])],
-                ['Instruments', False, URL('music', 'browse', args=['instruments'])]]],
-           ['Create', False, URL('music', 'index'),
-               [['New song', False, URL('music', 'edit', args=['song'])],
-                ['New instrument', False, URL('music', 'edit', args=['instrument'])]]],
-           ['About', False, URL('index'),
-               [['About Jamminc', False, URL('index')],
-                ['Documentation', False, URL('index')],
-                ['News', False, URL('default', 'news')]]]],
-          _id='navigation')}}
+      {{=MENU(response.menu, _id='navigation')}}
 
       {{ if auth.user: }}
           <a href="{{= URL('default', 'user', args=['logout']) }}" class="login-link">Log out</a>

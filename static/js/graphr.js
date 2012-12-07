@@ -171,6 +171,16 @@ graphr.Graph = function (spec) {
         svgElement.appendChild(path.element);
     };
 
+    var handleResize = function () {
+        var width = $(window).width();
+        var height = $(window).height();
+        var selWidth = $(selectionElement).width();
+        uiContainer.style.width = width + "px";
+        uiContainer.style.height = height + "px";
+        scrollContainer.style.width = (width - selWidth - 50) + "px";
+        scrollContainer.style.height = (height - 50) + "px";
+    };
+
     var makeGraph = function () {
         uiContainer = document.createElement("div");
 
@@ -229,16 +239,6 @@ graphr.Graph = function (spec) {
                 clear: "both"
             })
             .appendTo(uiContainer);
-
-        var handleResize = function () {
-            var width = $(window).width();
-            var height = $(window).height();
-            var selWidth = $(selectionElement).width();
-            uiContainer.style.width = width + "px";
-            uiContainer.style.height = height + "px";
-            scrollContainer.style.width = (width - selWidth - 50) + "px";
-            scrollContainer.style.height = (height - 50) + "px";
-        };
 
         $(window).resize(handleResize);
 
@@ -397,6 +397,7 @@ graphr.Graph = function (spec) {
                 nodes[nodeId].update();
             }
         }
+        handleResize();
     };
 
     this.getElement = function () {
