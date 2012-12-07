@@ -255,6 +255,123 @@ jamminc.nodeTypes = [
 
 jamminc.defaultInstrument = '{"nodes":{"id_1":{"offset":{"top":1481,"left":2895},"type":"Output","inputs":{"output":{"object":"id_5","output":"signal"}},"outputs":{}},"id_5":{"offset":{"top":1476.5,"left":2695},"type":"Sine","inputs":{"freq":{"object":"id_7","output":"note"},"amp":{"object":"id_9","output":"num"}},"outputs":{"signal":[{"object":"id_1","input":"output"}]}},"id_7":{"offset":{"top":1433.5,"left":2532},"type":"Input","inputs":{},"outputs":{"note":[{"object":"id_5","input":"freq"}]}},"id_9":{"offset":{"top":1504.5,"left":2491},"type":"Number","inputs":{},"outputs":{"num":[{"object":"id_5","input":"amp"}]},"widget":0.2}}}';
 
+// spec.inst_id = instrument id to describe
+// spec.song_id = song id to describe
+// (these are mutually exclusive)
+jamminc.Description = function (spec) {
+    var that = this;
+
+    var API_URL = "/jamminc/music/description.json";
+    var song_id, inst_id;
+    var element, textArea, closeButton, submitButton;
+
+    Object.defineProperties(this, {
+        song_id: {
+            get: function () { return song_id; },
+            set: function (id) {
+                song_id = id;
+                inst_id = null;
+            }
+        },
+        inst_id: {
+            get: function () { return inst_id; },
+            set: function (id) {
+                inst_id = id;
+                song_id = null;
+            }
+        }
+    });
+
+    var makeUI = function () {
+        textArea = document.createElement("textarea");
+        $(textArea)
+            .css({ width: "100%", height: "90%" });
+        
+        closeButton = document.createElement("div");
+        $(closeButton)
+            .attr("class", "close")
+            .click(function () {
+                $(element).fadeOut();
+            });
+
+        submitButton = document.createElement("input");
+        $(submitButton)
+            .attr({ type: "button", value: "Submit"})
+            .click(function () {
+                save();
+            });
+
+        element = document.createElement("div");
+        $(element)
+            .attr("class", "floating-box")
+            .css({ display: "none" })
+            .append(closeButton, textArea, submitButton)
+            .appendTo(document.body);
+    };
+
+    var save = function () {
+        var data = {
+            song_id: song_id,
+            inst_id: inst_id,
+            description: textArea.value
+        };
+
+        var success = function () {
+            $(element).fadeOut();
+            mw.flash("Description saved");
+        };
+
+        var error = function (message) {
+            mw.flash("Couldn't save description: " + message);
+        };
+
+        $.ajax({
+            url: API_URL,
+            type: "PUT",
+            data: data,
+            success: function (data, textStatus, jqXHR) {
+                if (data.error) {
+                    error(data.error);
+                } else {
+                    success();
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                error(textStatus);
+            }
+        });
+    };
+
+    this.show = function () {
+        if (!textArea.value) {
+            $.ajax({
+                url: API_URL,
+                type: "GET",
+                data: { song_id: song_id, inst_id: inst_id },
+                success: function (data, textStatus, jqXHR) {
+                    textArea.value = data.description;
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    mw.flash("Couldn't load description");
+                }
+            });
+        }
+            
+        $(element).fadeIn();
+    };
+        
+    var init = function () {
+        if (spec.song_id) {
+            song_id = spec.song_id;
+        } else {
+            inst_id = spec.inst_id;
+        }
+
+        makeUI();
+    };
+    init();
+};
+
 // spec.id = id of existing instrument to load
 jamminc.Instrument = function (spec) {
     spec = spec || {};
@@ -263,7 +380,7 @@ jamminc.Instrument = function (spec) {
 
     var API_URL = "/jamminc/music/instruments.json";
     var id, local, ready;
-    var graph, nameInput;
+    var graph, nameInput, description, describeButton;
 
     Object.defineProperties(this, {
         id: {
@@ -283,10 +400,23 @@ jamminc.Instrument = function (spec) {
         }
     });
 
+    var makeDescription = function () {
+        description = new jamminc.Description({ inst_id: id });
+        describeButton = document.createElement("a");
+        $(describeButton)
+            .attr({ class: "button", href: "#" })
+            .text("Edit description")
+            .click(function () {
+                description.show();
+                return false;
+            });
+    };
+
     this.place = function () {
         $("#instrument-ui")
             .empty()
             .append(nameInput,
+                    describeButton || '',
                     document.createElement("br"),
                     graph.getElement());
         graph.update();
@@ -306,6 +436,8 @@ jamminc.Instrument = function (spec) {
                 } else {
                     local = false;
                     id = data.id;
+                    makeDescription();
+                    that.place();
                     mw.flash("New instrument created");
                 }
 
@@ -393,6 +525,7 @@ jamminc.Instrument = function (spec) {
 
         if (id) {
             that.load();
+            makeDescription();
         } else {
             local = true;
             ready = true;

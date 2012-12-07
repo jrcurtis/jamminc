@@ -6,7 +6,7 @@ $(function (event) {
             type: "DELETE",
             success: function (data, textStatus, jqXHR) {
                 mw.flash(name + " deleted");
-                $element.fadeOut().detach();
+                $element.fadeOut();
             }
         });
     };

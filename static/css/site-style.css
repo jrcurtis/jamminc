@@ -26,6 +26,10 @@ h3 {
     margin: 3px 0px;
 }
 
+audio {
+    margin: 10px;
+}
+
 .flash {
     position: fixed;
     right: 0px;
@@ -55,6 +59,12 @@ h3 {
     right: 5px;
     bottom: 13px;
     margin-left: 5px;
+}
+
+.floating-box .close {
+    position: absolute;
+    left: 5px;
+    top: 5px;
 }
 
 #header {
@@ -233,6 +243,18 @@ ul.view-options>li {
     padding-left: 3px;
 }
 
+.floating-box {
+    position: fixed;
+    left: 25%;
+    top: 25%;
+    width: 50%;
+    height: 50%;
+    padding: 20px 15px 5px 15px;
+    background-color: #AFD8E1;
+    border: solid 1px #6FA3AE;
+    box-shadow: 2px 2px 3px #555;
+}
+
 .ui-box {
     border-radius: 5px;
     box-shadow: 1px 1px 2px 1px #AAA inset;
@@ -341,6 +363,8 @@ ul.view-options>li {
 }
 
 .description, .comment {
+    display: block;
+    padding: 5px;
     padding-left: 130px;
     white-space: pre-wrap;
 }

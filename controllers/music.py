@@ -215,14 +215,8 @@ def instruments_list():
         else:
             instruments_query = db.instruments.author == 1
 
-        logger.info('user {} instruments {}'.format(
-                auth.user_id,
-                db(db.instruments.author == auth.user_id).count()))
-
         instruments = db(instruments_query).select(
             db.instruments.id, db.instruments.name).as_list()
-
-        logger.info('got these bitch {}'.format(instruments))
 
         return {
             'instruments': map(lambda r: [r['name'], r['id']], instruments)
@@ -373,7 +367,8 @@ def songs():
 @request.restful()
 def description():
     def GET(song_id=0, inst_id=0):
-        table, id = db.songs, song_id if song_id else db.instruments, inst_id
+        table, id = ((db.songs, song_id)
+                     if song_id else (db.instruments, inst_id))
         row = db(table.id == id).select(table.description).first()
 
         return {
@@ -382,12 +377,13 @@ def description():
             }
 
     def PUT(description, song_id=0, inst_id=0):
-        table, id = db.songs, song_id if song_id else db.isntruments, inst_id
+        table, id = ((db.songs, song_id)
+                     if song_id else (db.instruments, inst_id))
         dbset = db((table.author == auth.user_id)
                    & (table.id == id))
-        result = dbset.validate_and_update(table.description=description)
+        result = dbset.validate_and_update(description=description)
 
-        return { 'error': 'Database error' if result.error else None }
+        return { 'error': 'Database error' if result.errors else None }
     
     return locals()
 
