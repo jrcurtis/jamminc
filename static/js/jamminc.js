@@ -263,7 +263,7 @@ jamminc.Description = function (spec) {
 
     var API_URL = "/jamminc/music/description.json";
     var song_id, inst_id;
-    var element, textArea, closeButton, submitButton;
+    var element, textArea, closeButton, submitButton, showButton;
 
     Object.defineProperties(this, {
         song_id: {
@@ -271,6 +271,7 @@ jamminc.Description = function (spec) {
             set: function (id) {
                 song_id = id;
                 inst_id = null;
+                textArea.value = '';
             }
         },
         inst_id: {
@@ -278,7 +279,11 @@ jamminc.Description = function (spec) {
             set: function (id) {
                 inst_id = id;
                 song_id = null;
+                textArea.value = '';
             }
+        },
+        showButton: {
+            get: function () { return showButton; }
         }
     });
 
@@ -307,6 +312,15 @@ jamminc.Description = function (spec) {
             .css({ display: "none" })
             .append(closeButton, textArea, submitButton)
             .appendTo(document.body);
+
+        showButton = document.createElement("a");
+        $(showButton)
+            .attr({ class: "button", href: "#" })
+            .text("Edit description")
+            .click(function () {
+                that.show();
+                return false;
+            });
     };
 
     var save = function () {
@@ -380,7 +394,7 @@ jamminc.Instrument = function (spec) {
 
     var API_URL = "/jamminc/music/instruments.json";
     var id, local, ready;
-    var graph, nameInput, description, describeButton;
+    var graph, nameInput, description;
 
     Object.defineProperties(this, {
         id: {
@@ -402,21 +416,13 @@ jamminc.Instrument = function (spec) {
 
     var makeDescription = function () {
         description = new jamminc.Description({ inst_id: id });
-        describeButton = document.createElement("a");
-        $(describeButton)
-            .attr({ class: "button", href: "#" })
-            .text("Edit description")
-            .click(function () {
-                description.show();
-                return false;
-            });
     };
 
     this.place = function () {
         $("#instrument-ui")
             .empty()
             .append(nameInput,
-                    describeButton || '',
+                    description ? description.showButton : '',
                     document.createElement("br"),
                     graph.getElement());
         graph.update();
@@ -699,7 +705,7 @@ jamminc.Song = function (spec) {
 
     var API_URL = "/jamminc/music/songs.json";
     var id, local;
-    var tracks, instruments;
+    var tracks, instruments, description;
 
     Object.defineProperties(this, {
         id: {
@@ -720,6 +726,11 @@ jamminc.Song = function (spec) {
     mw.synchronize(this, {
         name: $("#song-name").get(0)
     });
+
+    var makeDescription = function () {
+        description = new jamminc.Description({ song_id: id });
+        $("#song-name").after(description.showButton);
+    };
 
     this.generateAudio = function (handler) {
         tracks.sort(function (t1, t2) {
@@ -787,6 +798,7 @@ jamminc.Song = function (spec) {
                 } else {
                     local = false;
                     id = data.id;
+                    makeDescription();
                     mw.flash("New song created");
                     that.save();
                 }
@@ -861,6 +873,7 @@ jamminc.Song = function (spec) {
 
         if (spec.id) {
             that.load();
+            makeDescription();
         } else {
             local = true;
         }
