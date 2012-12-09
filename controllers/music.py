@@ -373,29 +373,23 @@ def description():
     if not auth.user:
         return { 'error': 'Must be logged in' }
 
-    
+    if request.vars.song_id:
+        table = db.songs
+        id = request.vars.song_id
+    elif request.vars.inst_id:
+        table = db.instruments
+        id = request.vars.inst_id
+    else:
+        raise HTTP(400)
 
-
-    def GET(song_id=0, inst_id=0):
-        table, id = ((db.songs, song_id)
-                     if song_id else (db.instruments, inst_id))
-        row = db(table.id == id).select(table.description).first()
-
-        return {
-            'description': row.description,
-            'error': 'Database error' if not row else None,
-            }
-
-    def PUT(description, song_id=0, inst_id=0):
-        table, id = ((db.songs, song_id)
-                     if song_id else (db.instruments, inst_id))
-        dbset = db((table.author == auth.user_id)
-                   & (table.id == id))
-        result = dbset.validate_and_update(description=description)
-
-        return { 'error': 'Database error' if result.errors else None }
-    
-    return locals()
+    form = SQLFORM(table, table[id], fields=['description'], showid=False)
+ 
+    if form.process().accepted:
+        return {}
+    elif form.errors:
+        return { 'form': form, 'error': 'Form has errors' }
+    else:
+        return { 'form': form }
 
 def image():
     if not auth.user:
@@ -422,8 +416,7 @@ def image():
 
         return {}
     elif form.errors:
-        logger.info('image error {}'.format([e for e in form.errors]))
-        return { 'error': form.errors, 'form': form }
+        return { 'form': form, 'error': 'Form has errors' }
     else:
         return { 'form': form }
 

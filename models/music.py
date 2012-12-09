@@ -120,8 +120,6 @@ def browse_page(queries):
             query = query & (table.image == db.images.id)
             fields.append(db.images.image)
 
-        logger.info('query {}'.format(str(query)))
-
         dbset = db(query)
         count = dbset.count()
 
@@ -141,7 +139,7 @@ def browse_page(queries):
 
         entries = dbset.select(
             *fields,
-            orderby=table[sort_field], limitby=limit)
+            orderby=table[sort_field], limitby=limit, distinct=True)
 
         browse_data['items'][tablename] = {
             'entries': entries,

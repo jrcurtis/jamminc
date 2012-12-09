@@ -153,15 +153,23 @@ mw.makeSelect = function (choices) {
     return select;
 };
 
-mw.flash = function (message) {
-    var flash = jQuery('.flash');
-    flash.hide();
-    flash
-        .html(message)
-        .append('<div class="close"></div>')
-        .slideDown();
-    setTimeout(function () { flash.fadeOut(); }, 5000);
-};
+mw.flash = (function () {
+    var lastTimeout = null;
+
+    return function (message) {
+        var flash = jQuery('.flash');
+        flash.hide();
+        flash
+            .html(message)
+            .append('<div class="close"></div>')
+            .slideDown();
+
+        if (lastTimeout) {
+            clearTimeout(lastTimeout);
+        }
+        lastTimeout = setTimeout(function () { flash.fadeOut(); }, 5000);
+    };
+})();
 
 // properties = { prop_name: dom_element, ... }
 mw.synchronize = function (object, properties) {

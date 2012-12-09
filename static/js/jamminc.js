@@ -258,145 +258,12 @@ jamminc.defaultInstrument = '{"nodes":{"id_1":{"offset":{"top":1481,"left":2895}
 // spec.inst_id = instrument id to describe
 // spec.song_id = song id to describe
 // (these are mutually exclusive)
-jamminc.Description = function (spec) {
+// spec.field = "image" | "description"
+jamminc.ItemForm = function (spec) {
     var that = this;
 
-    var API_URL = "/jamminc/music/description.json";
-    var song_id, inst_id;
-    var element, textArea, closeButton, submitButton, showButton;
-
-    Object.defineProperties(this, {
-        song_id: {
-            get: function () { return song_id; },
-            set: function (id) {
-                song_id = id;
-                inst_id = null;
-                textArea.value = '';
-            }
-        },
-        inst_id: {
-            get: function () { return inst_id; },
-            set: function (id) {
-                inst_id = id;
-                song_id = null;
-                textArea.value = '';
-            }
-        },
-        showButton: {
-            get: function () { return showButton; }
-        }
-    });
-
-    var makeUI = function () {
-        textArea = document.createElement("textarea");
-        $(textArea)
-            .css({ width: "100%", height: "75%" });
-        
-        closeButton = document.createElement("div");
-        $(closeButton)
-            .attr("class", "close")
-            .click(function () {
-                $(element).fadeOut();
-            });
-
-        submitButton = document.createElement("input");
-        $(submitButton)
-            .attr({ type: "button", value: "Submit"})
-            .click(function () {
-                save();
-            });
-
-        element = document.createElement("div");
-        $(element)
-            .attr("class", "floating-box")
-            .css({ display: "none" })
-            .append(closeButton,
-                    "<h3>Description</h3><br/>",
-                    textArea,
-                    submitButton)
-            .appendTo(document.body);
-
-        showButton = document.createElement("a");
-        $(showButton)
-            .attr({ class: "button", href: "#" })
-            .text("Edit description")
-            .click(function () {
-                that.show();
-                return false;
-            });
-    };
-
-    var save = function () {
-        var data = {
-            song_id: song_id,
-            inst_id: inst_id,
-            description: textArea.value
-        };
-
-        var success = function () {
-            $(element).fadeOut();
-            mw.flash("Description saved");
-        };
-
-        var error = function (message) {
-            mw.flash("Couldn't save description: " + message);
-        };
-
-        $.ajax({
-            url: API_URL,
-            type: "PUT",
-            data: data,
-            success: function (data, textStatus, jqXHR) {
-                if (data.error) {
-                    error(data.error);
-                } else {
-                    success();
-                }
-            },
-            error: function (jqXHR, textStatus, errorThrown) {
-                error(textStatus);
-            }
-        });
-    };
-
-    this.show = function () {
-        if (!textArea.value) {
-            $.ajax({
-                url: API_URL,
-                type: "GET",
-                data: { song_id: song_id, inst_id: inst_id },
-                success: function (data, textStatus, jqXHR) {
-                    textArea.value = data.description;
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    mw.flash("Couldn't load description");
-                }
-            });
-        }
-            
-        $(element).fadeIn();
-    };
-        
-    var init = function () {
-        if (spec.song_id) {
-            song_id = spec.song_id;
-        } else {
-            inst_id = spec.inst_id;
-        }
-
-        makeUI();
-    };
-    init();
-};
-
-// spec.inst_id = instrument id to describe
-// spec.song_id = song id to describe
-// (these are mutually exclusive)
-jamminc.Image = function (spec) {
-    var that = this;
-
-    var API_URL = "/jamminc/music/image.json";
-    var song_id, inst_id;
+    var API_URL = "";
+    var song_id, inst_id, field;
     var element, closeButton, showButton, elementBody, form;
 
     Object.defineProperties(this, {
@@ -436,14 +303,14 @@ jamminc.Image = function (spec) {
             .attr("class", "floating-box")
             .css({ display: "none" })
             .append(closeButton,
-                    "<h3>Image</h3>",
+                    "<h3>" + mw.capitalize(field) + "</h3>",
                     elementBody)
             .appendTo(document.body);
 
         showButton = document.createElement("a");
         $(showButton)
             .attr({ class: "button", href: "#" })
-            .text("Edit image")
+            .text("Edit " + field)
             .click(function () {
                 that.show();
                 return false;
@@ -473,17 +340,17 @@ jamminc.Image = function (spec) {
             contentType: false,
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
-                    mw.flash("Couldn't save image: " + data.error);
+                    mw.flash("Couldn't save " + field + ": " + data.error);
                     setForm(data.form);
                 } else {
                     form = null;
                     $(elementBody).empty();
                     $(element).fadeOut();
-                    mw.flash("Image saved");
+                    mw.flash(mw.capitalize(field) + " saved");
                 }
             },
             error: function (jqXHR, textStatus, errorThrown) {
-                mw.flash("Couldn't save image: Server error");
+                mw.flash("Couldn't save " + field + ": Server error");
             }
         });
     };
@@ -498,7 +365,7 @@ jamminc.Image = function (spec) {
                     setForm(data.form);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
-                    mw.flash("Couldn't load image form");
+                    mw.flash("Couldn't load " + field + " form");
                 }
             });
         }
@@ -509,15 +376,22 @@ jamminc.Image = function (spec) {
     var init = function () {
         if (spec.song_id) {
             song_id = spec.song_id;
-        } else {
+        } else if (spec.inst_id) {
             inst_id = spec.inst_id;
+        }
+
+        if (spec.field == "description") {
+            field = spec.field;
+            API_URL = "/jamminc/music/description.json";
+        } else if (spec.field == "image") {
+            field = spec.field;
+            API_URL = "/jamminc/music/image.json";
         }
 
         makeUI();
     };
     init();
 };
-
 
 // spec.id = id of existing instrument to load
 jamminc.Instrument = function (spec) {
@@ -548,8 +422,14 @@ jamminc.Instrument = function (spec) {
     });
 
     var makeUpdaters = function () {
-        description = new jamminc.Description({ inst_id: id });
-        image = new jamminc.Image({ inst_id: id });
+        description = new jamminc.ItemForm({
+            inst_id: id,
+            field: "description"
+        });
+        image = new jamminc.ItemForm({
+            inst_id: id,
+            field: "image"
+        });
     };
 
     this.place = function () {
@@ -840,7 +720,7 @@ jamminc.Song = function (spec) {
 
     var API_URL = "/jamminc/music/songs.json";
     var id, local;
-    var tracks, instruments, description;
+    var tracks, instruments, description, image;
 
     Object.defineProperties(this, {
         id: {
@@ -863,8 +743,14 @@ jamminc.Song = function (spec) {
     });
 
     var makeUpdaters = function () {
-        description = new jamminc.Description({ song_id: id });
-        image = new jamminc.Image({ song_id: id });
+        description = new jamminc.ItemForm({
+            song_id: id,
+            field: "description"
+        });
+        image = new jamminc.Image({
+            song_id: id,
+            field: "image"
+        });
         $("#song-name").after(description.showButton, image.showButton);
     };
 
