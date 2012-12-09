@@ -309,7 +309,7 @@ jamminc.ItemForm = function (spec) {
 
         showButton = document.createElement("a");
         $(showButton)
-            .attr({ class: "button", href: "#" })
+            .attr({ href: "#" })
             .text("Edit " + field)
             .click(function () {
                 that.show();
@@ -334,7 +334,7 @@ jamminc.ItemForm = function (spec) {
 
         $.ajax({
             url: API_URL,
-            type: "PUT",
+            type: "POST",
             data: data,
             processData: false,
             contentType: false,
@@ -393,6 +393,67 @@ jamminc.ItemForm = function (spec) {
     init();
 };
 
+// spec.inst_id, spec.song_id you know the drill
+jamminc.AudioUpload = function (spec) {
+    spec = spec || {};
+    var that = this;
+
+    var song_id, inst_id;
+    var uploadButton;
+
+    Object.defineProperties(this, {
+        uploadButton: {
+            get: function () { return uploadButton; }
+        }
+    });
+
+    var init = function () {
+        if (spec.song_id) {
+            song_id = spec.song_id;
+        } else if (spec.inst_id) {
+            inst_id = spec.inst_id;
+        }
+
+        uploadButton = document.createElement("a");
+        $(uploadButton)
+            .text("Upload audio")
+            .attr({ href: "#" })
+            .click(function () {
+                var wav = $("#music-audio").data("jammincWAV");
+                if (!wav) {
+                    mw.flash("You need to generate some audio first");
+                    return false;
+                }
+
+                var data = new FormData();
+                data.append("song_id", song_id);
+                data.append("inst_id", inst_id);
+                data.append("audio", new Blob([wav], { type: "audio/wav" }));
+
+                $.ajax({
+                    url: "/jamminc/music/audio.json",
+                    type: "POST",
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    success: function (data, textStatus, jqXHR) {
+                        if (data.error) {
+                            mw.flash("Couldn't save audio : " + data.error);
+                        } else {
+                            mw.flash("Audio saved");
+                        }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        mw.flash("Couldn't save audio: Server error");
+                    }
+                });
+
+                return false;
+            });
+    };
+    init();
+};
+
 // spec.id = id of existing instrument to load
 jamminc.Instrument = function (spec) {
     spec = spec || {};
@@ -401,7 +462,7 @@ jamminc.Instrument = function (spec) {
 
     var API_URL = "/jamminc/music/instruments.json";
     var id, local, ready;
-    var graph, nameInput, description, image;
+    var graph, nameInput, description, image, audioUpload;
 
     Object.defineProperties(this, {
         id: {
@@ -430,14 +491,26 @@ jamminc.Instrument = function (spec) {
             inst_id: id,
             field: "image"
         });
+        audioUpload = new jamminc.AudioUpload({
+            inst_id: id
+        });
     };
 
     this.place = function () {
+        var buttons = '';
+        if (description && image && audioUpload) {
+            buttons = mw.makeList([
+                description.showButton,
+                image.showButton,
+                audioUpload.uploadButton
+            ]);
+            $(buttons).attr("class", "button-group");
+        }
+
         $("#instrument-ui")
             .empty()
             .append(nameInput,
-                    description ? description.showButton : '',
-                    image ? image.showButton : '',
+                    buttons,
                     document.createElement("br"),
                     graph.getElement());
         graph.update();
@@ -720,7 +793,7 @@ jamminc.Song = function (spec) {
 
     var API_URL = "/jamminc/music/songs.json";
     var id, local;
-    var tracks, instruments, description, image;
+    var tracks, instruments, description, image, audioUpload;
 
     Object.defineProperties(this, {
         id: {
@@ -747,11 +820,20 @@ jamminc.Song = function (spec) {
             song_id: id,
             field: "description"
         });
-        image = new jamminc.Image({
+        image = new jamminc.ItemForm({
             song_id: id,
             field: "image"
         });
-        $("#song-name").after(description.showButton, image.showButton);
+        audioUpload = new jamminc.AudioUpload({
+            song_id: id
+        });
+        var buttons = mw.makeList([
+            description.showButton,
+            image.showButton,
+            audioUpload.uploadButton
+        ]);
+        $(buttons).attr("class", "button-group");
+        $("#song-name").after(buttons);
     };
 
     this.generateAudio = function (handler) {
@@ -1062,8 +1144,10 @@ $(function () {
     $("#play-song").click(function (event) {
         if (jamminc.song) {
             jamminc.song.generateAudio(function (wav) {
-                var audio = document.getElementById("music-audio");
-                audio.setAttribute("src", wav.getDataURI());
+                var audio = $("#music-audio")
+                    .attr("src", wav.getDataURI())
+                    .data("jammincWAV", wav.getWav())
+                    .get(0);
                 audio.play();
             });
         }

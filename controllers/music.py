@@ -65,7 +65,6 @@ def view():
 
     song = instrument = None
 
-    logger.info('view args {}'.format(request.args))
     if len(request.args) != 2:
         raise HTTP(404)
 
@@ -73,11 +72,12 @@ def view():
         row = (
             db((db.instruments.id == request.args[1])
                & (db.instruments.image == db.images.id)
+               & (db.instruments.audio == db.audio.id)
                & (db.instruments.author == db.auth_user.id))
             .select(db.instruments.id, db.instruments.name,
                     db.instruments.description,
                     db.instruments.author, db.instruments.created,
-                    db.images.image,
+                    db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username)
             .first())
 
@@ -94,10 +94,11 @@ def view():
         row = (
             db((db.songs.id == request.args[1])
                & (db.songs.image == db.images.id)
+               & (db.songs.audio == db.audio.id)
                & (db.songs.author == db.auth_user.id))
             .select(db.songs.id, db.songs.name, db.songs.author,
                     db.songs.description, db.songs.created,
-                    db.images.image,
+                    db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username)
             .first())
 
@@ -137,6 +138,7 @@ def view():
     return_data['instrument'] = instrument
     return_data['author'] = row.auth_user
     return_data['image'] = row.images.image
+    return_data['audio'] = row.audio.audio
     return_data['comment_form'] = comment_form
 
     return return_data
@@ -374,15 +376,18 @@ def description():
         return { 'error': 'Must be logged in' }
 
     if request.vars.song_id:
-        table = db.songs
-        id = request.vars.song_id
+        table, id = db.songs, request.vars.song_id
     elif request.vars.inst_id:
-        table = db.instruments
-        id = request.vars.inst_id
+        table, id = db.instruments, request.vars.inst_id
     else:
         raise HTTP(400)
 
-    form = SQLFORM(table, table[id], fields=['description'], showid=False)
+    dbset = db((table.id == id) & (table.author == auth.user_id))
+    record = dbset.select().first()
+    if not record:
+        raise HTTP(404)
+
+    form = SQLFORM(table, record, fields=['description'], showid=False)
  
     if form.process().accepted:
         return {}
@@ -420,4 +425,30 @@ def image():
     else:
         return { 'form': form }
 
+def audio():
+    if not auth.user:
+        return { 'error': 'Must be logged in' }
+
+    if request.vars.song_id:
+        table, id = db.songs, request.vars.song_id
+    elif request.vars.inst_id:
+        table, id = db.instruments, request.vars.inst_id
+    else:
+        raise HTTP(400)
+
+    row = db(table.id == id).select(table.name).first()
+    if not row:
+        raise HTTP(404)
+
+    result = db.audio.validate_and_insert(
+        audio=db.audio.audio.store(request.vars.audio.file,
+                                   '{}.wav'.format(row.name)),
+        user=auth.user_id)
+
+    if not result.errors:
+        dbset = db((table.id == id) & (table.author == auth.user_id))
+        dbset.validate_and_update(audio=result.id)
+        return {}
+    else:
+        return { 'error': 'Database error' }
 

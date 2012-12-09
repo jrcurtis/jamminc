@@ -7,41 +7,73 @@ mwWAV.dataURI = function (data, mime, charset) {
         uri += ";" + charset;
     }
     uri += ";base64,";
-    uri += btoa(data);
+    var i, dataStr = "";
+    for (i = 0; i < data.length; i++) {
+        dataStr += String.fromCharCode(data[i]);
+    }
+    uri += btoa(dataStr);
     return uri;
 };
 
 
 mwWAV.WAV = function (spec) {
+    spec = spec || {};
     var that = this;
+
+    var ID_SIZE = 4;
+    var SIZE_SIZE = 4;
+
     var channels, rate, bits, blockAlign, bytesPerSecond;
     var maxSample, sampleShift, channelData;
+    var encodedWav, encodedUri;
 
-    var encodeInt = function (num, bytes) {
-        var str = "";
+    var encodeInt = function (num, numBytes, bytes, offset) {
+        bytes = bytes || new Uint8Array(numBytes);
+        offset = offset || 0; 
         var i;
-        for (i = 0; i < bytes; i++) {
-            str += String.fromCharCode(
-                (num & (0xFF << i * 8)) >> i * 8);
+        for (i = 0; i < numBytes; i++) {
+            bytes[offset + i] = (num & (0xFF << i * 8)) >> i * 8;
         }
-        return str;
+        return bytes;
     };
 
+    // id = 4 byte string identifying chunk
+    // data = [[numBytes, value], ...]
     var encodeChunk = function (id, data) {
-        var str = "";
+        var size = mw.sum(
+            data.map(function (x) {
+                return x[0] || (x[0] = x[1].length);
+            }));
+        if ((size & 1) === 1) {
+            size++;
+        }
+
+        var bytes = new Uint8Array(ID_SIZE + SIZE_SIZE + size);
+
+        var offset = 0;
+        var addData = function (d, s) {
+            if (d.constructor === String) {
+                bytes.set(d
+                          .split("")
+                          .map(function (c) { return c.charCodeAt(0); }),
+                          offset);
+            } else if (d.length) {
+                bytes.set(d, offset);
+            } else {
+                encodeInt(d, s, bytes, offset);
+            }
+            offset += s;
+        };
+
+        addData(id, ID_SIZE);
+        addData(size, SIZE_SIZE);
+
         var i;
         for (i = 0; i < data.length; i++) {
-            if (data[i][0] === 0) {
-                str += data[i][1];
-            } else {
-                str += encodeInt(data[i][1], data[i][0]);
-            }
+            addData(data[i][1], data[i][0]);
         }
-        var size = str.length;
-        if ((size & 1) === 1) {
-            str += encodeInt(0, 1);
-        }
-        return id + encodeInt(size, 4) + str;
+
+        return bytes;
     };
 
     var formatChunk = function () {
@@ -58,16 +90,20 @@ mwWAV.WAV = function (spec) {
 
     // Interlaces and encodes the samples
     var dataChunk = function () {
-        var str = "";
         var samples = channelData.length > 0 ? channelData[0].length : 0;
-        var channel, i, sample;
+        var numBytes = bits / 8;
+        var size = channels * samples * numBytes;
+        var bytes = new Uint8Array(size);
+
+        var channel, i, sample, offset = 0;
         for (i = 0; i < channelData[0].length; i++) {
             for (channel = 0; channel < channels; channel++) {
                 sample = convertSample(channelData[channel][i]);
-                str += encodeInt(sample, bits / 8);
+                encodeInt(sample, numBytes, bytes, offset);
+                offset += numBytes;
             }
         }
-        return encodeChunk("data", [[0, str]]);
+        return encodeChunk("data", [[0, bytes]]);
     };
 
     var convertSample = function (sample) {
@@ -83,6 +119,8 @@ mwWAV.WAV = function (spec) {
     };
 
     this.write = function (data, start) {
+        encodedWav = encodedUri = null;
+
         if (data.length !== channels) {
             throw new Error("Must write the correct number of channels");
         }
@@ -104,15 +142,25 @@ mwWAV.WAV = function (spec) {
     };
 
     this.getWav = function () {
-        return encodeChunk(
+        if (encodedWav) {
+            return encodedWav;
+        }
+
+        encodedWav = encodeChunk(
             "RIFF",
             [[0, "WAVE"],
              [0, formatChunk()],
              [0, dataChunk()]]);
+        return encodedWav;
     };
 
     this.getDataURI = function () {
-        return mwWAV.dataURI(this.getWav(), "audio/wav");
+        if (encodedUri) {
+            return encodedUri;
+        }
+
+        encodedUri = mwWAV.dataURI(this.getWav(), "audio/wav");
+        return encodedUri;
     };
 
     this.getChannels = function () {

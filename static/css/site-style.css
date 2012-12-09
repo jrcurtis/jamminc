@@ -87,7 +87,6 @@ audio {
     margin: 3px 20px 3px 3px;
     display: inline-block;
     float: left;
-    vertical-align: middle;
 }
 
 #header h1:hover {
@@ -103,7 +102,6 @@ audio {
 #navigation {
     list-style: none;
     display: inline;
-    vertical-align: middle;
 }
 
 #navigation>li a {
@@ -112,11 +110,14 @@ audio {
     text-shadow: 0px -1px rgba(0, 0, 0, 0.6);
 }
 
+#navigation>li>a {
+    font-size: 15px;
+    padding: 11px 7px;
+}
+
 #navigation>li {
     position: relative;
     float: left;
-    padding-left: 7px;
-    padding-right: 7px;
 }
 
 #navigation>li:not(:last-child) {
@@ -159,11 +160,14 @@ audio {
     padding: 0px 10px;
 }
 
-#navigation>li>ul>li>a:hover {
+#navigation>li a:hover {
     background-image: url('/jamminc/static/images/highlight.png');
     background-size: 100% 100%;
-    box-shadow: 0px 1px 2px #000;
     text-decoration: none;
+}
+
+#navigation>li>ul>li>a:hover {
+    box-shadow: 0px 1px 2px #000;
 }
 
 #navigation>li:hover {

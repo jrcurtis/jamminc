@@ -22,6 +22,10 @@ mw.capitalize = function (str) {
         });
 };
 
+mw.sum = function (xs) {
+    return xs.reduce(function (a, b) { return a + b; });
+};
+
 mw.arrayRemove = function (arr, elem) {
     var i = arr.indexOf(elem);
     if (i >= 0) {
@@ -107,6 +111,16 @@ mw.fixCoords = function (f) {
         e.offsetY = e.pageY - offset.top;
         return f(e);
     };
+};
+
+mw.makeList = function (els, type) {
+    var list = document.createElement(type || "ul");
+    els.forEach(function (el) {
+        var li = document.createElement("li");
+        li.appendChild(el);
+        list.appendChild(li);
+    });
+    return list;
 };
 
 mw.makeTable = function (rows, colStyles) {

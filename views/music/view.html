@@ -23,7 +23,10 @@
       </div>
       <br/>
       <img class="view-art" src="{{= URL('default', 'download', args=[image]) }}"/>
-      <audio controls></audio>
+      <audio controls {{= XML('src="{}"'.format(URL('default', 'download', args=[audio]))) if audio else '' }}></audio>
+      {{ if not audio: }}
+          <i>No audio has been uploaded yet</i>
+      {{ pass }}
       <br/>
       <span class="description">{{= thing.description or 'No description.' }}</span>
       <div class="clearfix"></div>

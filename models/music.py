@@ -8,6 +8,7 @@ db.define_table(
     Field('original', 'reference instruments', ondelete='NO ACTION'),
     Field('description', 'text', length=1024),
     Field('image', 'reference images', default=1),
+    Field('audio', 'reference audio'),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
     Field('rating', 'double',
@@ -32,6 +33,7 @@ db.define_table(
           default=auth.user_id, required=True, notnull=True),
     Field('description', 'text', length=1024),
     Field('image', 'reference images', default=1),
+    Field('audio', 'reference audio'),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
     Field('rating', 'double',
@@ -60,6 +62,14 @@ db.define_table(
     Field('user', 'reference auth_user',
           required=True, notnull=True,
           writable=False, readable=False))
+
+db.define_table(
+    'audio',
+    Field('audio', 'upload',
+          uploadseparate=True,
+          required=True, notnull=True),
+    Field('user', 'reference auth_user',
+          required=True, notnull=True))
 
 db.define_table(
     'comments',
