@@ -217,7 +217,6 @@ audio {
 }
 
 .browse-list>li>ol {
-    padding: 0px;
     margin: 0px;
     list-style-position: inside;
 }
@@ -322,7 +321,7 @@ ul.view-options>li {
 
 .music-list {
     list-style: none;
-    margin: 0px;
+    margin: auto;
     padding: 0px;
 }
 

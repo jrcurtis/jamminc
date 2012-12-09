@@ -22,7 +22,7 @@
         <span>Created {{= thing.created }}</span>
       </div>
       <br/>
-      <img class="view-art" src="/jamminc/static/images/default-art.png"/>
+      <img class="view-art" src="{{= URL('default', 'download', args=[image]) }}"/>
       <audio controls></audio>
       <br/>
       <span class="description">{{= thing.description or 'No description.' }}</span>

@@ -64,54 +64,56 @@ def view():
     return_data = {}
 
     song = instrument = None
-    
+
+    logger.info('view args {}'.format(request.args))
     if len(request.args) != 2:
         raise HTTP(404)
 
     if request.args[0] == 'instruments':
-        instrument = (
-            db(db.instruments.id == request.args[1])
+        row = (
+            db((db.instruments.id == request.args[1])
+               & (db.instruments.image == db.images.id)
+               & (db.instruments.author == db.auth_user.id))
             .select(db.instruments.id, db.instruments.name,
                     db.instruments.description,
-                    db.instruments.author, db.instruments.created)
+                    db.instruments.author, db.instruments.created,
+                    db.images.image,
+                    db.auth_user.id, db.auth_user.username)
             .first())
 
-        if not instrument:
+        if not row:
             raise HTTP(404)
 
-        return_data['instrument'] = instrument
-        return_data['author'] = db.auth_user[instrument.author]
-
-        return_data['comments'] = (
-            db(db.comments.instrument == instrument.id)
-            .select(db.comments.text, db.comments.created,
-                    db.auth_user.id, db.auth_user.username))
+        instrument = row.instruments
 
         return_data['browse_data'] = {}
 
-        db.comments.instrument.default = instrument.id
+        db.comments.instrument.default = row.instruments.id
 
     elif request.args[0] == 'songs':
-        song = (
-            db(db.songs.id == request.args[1])
+        row = (
+            db((db.songs.id == request.args[1])
+               & (db.songs.image == db.images.id)
+               & (db.songs.author == db.auth_user.id))
             .select(db.songs.id, db.songs.name, db.songs.author,
-                    db.songs.description, db.songs.created)
+                    db.songs.description, db.songs.created,
+                    db.images.image,
+                    db.auth_user.id, db.auth_user.username)
             .first())
 
-        if not song:
+        if not row:
             raise HTTP(404)
 
-        return_data['song'] = song
-        return_data['author'] = db.auth_user[song.author]
+        song = row.songs
 
         return_data.update(browse_page({
-                    'tracks': db.tracks.song == song.id,
+                    'tracks': db.tracks.song == row.songs.id,
                     'instruments': (
-                        (db.tracks.song == song.id)
+                        (db.tracks.song == row.songs.id)
                         & (db.tracks.instrument == db.instruments.id))
                     }))
 
-        db.comments.song.default = song.id
+        db.comments.song.default = row.songs.id
 
     else:
         raise HTTP(404)
@@ -122,8 +124,9 @@ def view():
     else:
         comment_form = 'Log in to comment.'
 
-    comments_query = ((db.comments.song if song else db.comments.instrument)
-                      == (song.id if song else instrument.id))
+    comments_query = (((db.comments.song if song else db.comments.instrument)
+                       == (song.id if song else instrument.id))
+                      & (db.comments.author == db.auth_user.id))
     return_data['comments'] = (
         db(comments_query)
         .select(db.comments.text, db.comments.created,
@@ -132,6 +135,8 @@ def view():
 
     return_data['song'] = song
     return_data['instrument'] = instrument
+    return_data['author'] = row.auth_user
+    return_data['image'] = row.images.image
     return_data['comment_form'] = comment_form
 
     return return_data
@@ -364,8 +369,13 @@ def songs():
 
     return locals()
 
-@request.restful()
 def description():
+    if not auth.user:
+        return { 'error': 'Must be logged in' }
+
+    
+
+
     def GET(song_id=0, inst_id=0):
         table, id = ((db.songs, song_id)
                      if song_id else (db.instruments, inst_id))
@@ -389,7 +399,7 @@ def description():
 
 def image():
     if not auth.user:
-        return { 'error': 'Must log in' }
+        return { 'error': 'Must be logged in' }
 
     form = SQLFORM(
         db.images,
