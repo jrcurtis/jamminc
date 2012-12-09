@@ -787,13 +787,17 @@ graphr.GraphNode = function (spec) {
     var init = function () {
         var i;
 
-        if (graphr.GraphNode.count !== undefined) {
-            graphr.GraphNode.count++;
+        if (spec.id) {
+            id = spec.id;
+            graphr.GraphNode.count = parseInt(id.substr(3), 10) + 1;
         } else {
-            graphr.GraphNode.count = 1;
+            if (graphr.GraphNode.count !== undefined) {
+                graphr.GraphNode.count++;
+            } else {
+                graphr.GraphNode.count = 1;
+            }
+            id = 'id_' + graphr.GraphNode.count;
         }
-
-        id = spec.id || ('id_' + graphr.GraphNode.count);
 
         graph = spec.graph;
         type = spec.type;
