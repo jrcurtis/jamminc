@@ -23,16 +23,21 @@
       </div>
       <br/>
       <img class="view-art" src="{{= URL('default', 'download', args=[image]) }}"/>
-      <audio controls {{= XML('src="{}"'.format(URL('default', 'download', args=[audio]))) if audio else '' }}></audio>
-      {{ if not audio: }}
-          <i>No audio has been uploaded yet</i>
-      {{ pass }}
-      <br/>
-      <span class="description">{{= thing.description or 'No description.' }}</span>
+
+      <div>
+        <audio controls {{= XML('src="{}"'.format(URL('default', 'download', args=[audio])) if audio else '') }}></audio>
+        {{ if not audio: }}
+            <span class="notice">No audio has been uploaded yet</span>
+        {{ pass }}
+      </div>
+
+      <div class="description">{{= thing.description or 'No description.' }}</div>
       <div class="clearfix"></div>
     </div>
 
-    <h3>Components used in this song</h3>
+    {{ if thing_type == 'songs': }}
+        <h3>Components used in this song</h3>
+    {{ pass }}
 {{end}}
 
 {{block after_list}}
@@ -49,9 +54,9 @@
     {{ pass }}
     </ol>
     {{ if not comments: }}
-        No comments yet.
+        <p>No comments yet.</p>
     {{ pass }}
-    <br/>
+
     {{= comment_form }}
 {{end}}
 

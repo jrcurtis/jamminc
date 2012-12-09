@@ -72,34 +72,32 @@ def view():
         row = (
             db((db.instruments.id == request.args[1])
                & (db.instruments.image == db.images.id)
-               & (db.instruments.audio == db.audio.id)
                & (db.instruments.author == db.auth_user.id))
             .select(db.instruments.id, db.instruments.name,
                     db.instruments.description,
                     db.instruments.author, db.instruments.created,
                     db.images.image, db.audio.audio,
-                    db.auth_user.id, db.auth_user.username)
+                    db.auth_user.id, db.auth_user.username,
+                    left=db.audio.on(db.instruments.audio == db.audio.id))
             .first())
 
         if not row:
             raise HTTP(404)
 
         instrument = row.instruments
-
         return_data['browse_data'] = {}
-
         db.comments.instrument.default = row.instruments.id
 
     elif request.args[0] == 'songs':
         row = (
             db((db.songs.id == request.args[1])
                & (db.songs.image == db.images.id)
-               & (db.songs.audio == db.audio.id)
                & (db.songs.author == db.auth_user.id))
             .select(db.songs.id, db.songs.name, db.songs.author,
                     db.songs.description, db.songs.created,
                     db.images.image, db.audio.audio,
-                    db.auth_user.id, db.auth_user.username)
+                    db.auth_user.id, db.auth_user.username,
+                    left=db.audio.on(db.songs.audio == db.audio.id))
             .first())
 
         if not row:
@@ -123,7 +121,7 @@ def view():
         crud.messages.record_created = 'Comment posted'
         comment_form = crud.create(db.comments)
     else:
-        comment_form = 'Log in to comment.'
+        comment_form = SPAN('Log in to comment.', _class='notice')
 
     comments_query = (((db.comments.song if song else db.comments.instrument)
                        == (song.id if song else instrument.id))

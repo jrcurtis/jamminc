@@ -26,23 +26,30 @@ h3 {
     margin: 3px 0px;
 }
 
-audio {
-    margin: 10px;
-}
-
 .flash {
     position: fixed;
     right: 0px;
     top: 50px;
-    padding: 10px;
+    z-index: 100;
+    display: none;
     padding-right: 25px;
     margin-right: 10px;
     min-width: 200px;
+    padding: 10px;
+}
+
+.notice {
+    font-style: italic;
+    font-size: 1em;
+    margin: 0.2em;
+    padding: 0.2em 1em;
+    display: inline-block;
+}
+
+.flash, .notice {
     background-color: #EE8;
     border: 1px solid #7E7E48;
     border-radius: 5px;
-    z-index: 100;
-    display: none;
     box-shadow: 2px 2px 3px #555;
 }
 
