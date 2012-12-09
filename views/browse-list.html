@@ -35,7 +35,7 @@
                           <div class="close">{{= row[type].id }}</div>
                       {{ pass }}
 
-                      <img src="/jamminc/static/images/default-art.png"/>
+                      <img src="{{= URL('default', 'download', args=[row.images.image]) }}"/>
                       <br/>
                       </div>
 

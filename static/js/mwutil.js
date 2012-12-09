@@ -15,6 +15,13 @@ mw.log = function (x, base) {
     return Math.log(x) / Math.log(base);
 };
 
+mw.capitalize = function (str) {
+    return str.replace(/(^|\s)(.)/g,
+        function (m, space, letter) {
+            return space + letter.toUpperCase();
+        });
+};
+
 mw.arrayRemove = function (arr, elem) {
     var i = arr.indexOf(elem);
     if (i >= 0) {

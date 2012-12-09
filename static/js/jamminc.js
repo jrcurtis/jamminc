@@ -290,7 +290,7 @@ jamminc.Description = function (spec) {
     var makeUI = function () {
         textArea = document.createElement("textarea");
         $(textArea)
-            .css({ width: "100%", height: "90%" });
+            .css({ width: "100%", height: "75%" });
         
         closeButton = document.createElement("div");
         $(closeButton)
@@ -310,7 +310,10 @@ jamminc.Description = function (spec) {
         $(element)
             .attr("class", "floating-box")
             .css({ display: "none" })
-            .append(closeButton, textArea, submitButton)
+            .append(closeButton,
+                    "<h3>Description</h3><br/>",
+                    textArea,
+                    submitButton)
             .appendTo(document.body);
 
         showButton = document.createElement("a");
@@ -386,6 +389,136 @@ jamminc.Description = function (spec) {
     init();
 };
 
+// spec.inst_id = instrument id to describe
+// spec.song_id = song id to describe
+// (these are mutually exclusive)
+jamminc.Image = function (spec) {
+    var that = this;
+
+    var API_URL = "/jamminc/music/image.json";
+    var song_id, inst_id;
+    var element, closeButton, showButton, elementBody, form;
+
+    Object.defineProperties(this, {
+        song_id: {
+            get: function () { return song_id; },
+            set: function (id) {
+                song_id = id;
+                inst_id = null;
+                textArea.value = '';
+            }
+        },
+        inst_id: {
+            get: function () { return inst_id; },
+            set: function (id) {
+                inst_id = id;
+                song_id = null;
+                textArea.value = '';
+            }
+        },
+        showButton: {
+            get: function () { return showButton; }
+        }
+    });
+
+    var makeUI = function () {
+        elementBody = document.createElement("div");
+        
+        closeButton = document.createElement("div");
+        $(closeButton)
+            .attr("class", "close")
+            .click(function () {
+                $(element).fadeOut();
+            });
+
+        element = document.createElement("div");
+        $(element)
+            .attr("class", "floating-box")
+            .css({ display: "none" })
+            .append(closeButton,
+                    "<h3>Image</h3>",
+                    elementBody)
+            .appendTo(document.body);
+
+        showButton = document.createElement("a");
+        $(showButton)
+            .attr({ class: "button", href: "#" })
+            .text("Edit image")
+            .click(function () {
+                that.show();
+                return false;
+            });
+    };
+
+    var setForm = function (formHTML) {
+        $(elementBody).html(formHTML);
+        form = $(elementBody).children().get(0);
+        $(form).submit(function () {
+            save();
+            return false;
+        });
+        
+    };
+
+    var save = function () {
+        var data = new FormData(form);
+        data.append("song_id", song_id);
+        data.append("inst_id", inst_id);
+
+        $.ajax({
+            url: API_URL,
+            type: "PUT",
+            data: data,
+            processData: false,
+            contentType: false,
+            success: function (data, textStatus, jqXHR) {
+                if (data.error) {
+                    mw.flash("Couldn't save image: " + data.error);
+                    setForm(data.form);
+                } else {
+                    form = null;
+                    $(elementBody).empty();
+                    $(element).fadeOut();
+                    mw.flash("Image saved");
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                mw.flash("Couldn't save image: Server error");
+            }
+        });
+    };
+
+    this.show = function () {
+        if (!form) {
+            $.ajax({
+                url: API_URL,
+                type: "GET",
+                data: { song_id: song_id, inst_id: inst_id },
+                success: function (data, textStatus, jqXHR) {
+                    setForm(data.form);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    mw.flash("Couldn't load image form");
+                }
+            });
+        }
+
+        $(element).fadeIn();
+    };
+        
+    var init = function () {
+        if (spec.song_id) {
+            song_id = spec.song_id;
+        } else {
+            inst_id = spec.inst_id;
+        }
+
+        makeUI();
+    };
+    init();
+};
+
+
 // spec.id = id of existing instrument to load
 jamminc.Instrument = function (spec) {
     spec = spec || {};
@@ -394,7 +527,7 @@ jamminc.Instrument = function (spec) {
 
     var API_URL = "/jamminc/music/instruments.json";
     var id, local, ready;
-    var graph, nameInput, description;
+    var graph, nameInput, description, image;
 
     Object.defineProperties(this, {
         id: {
@@ -414,8 +547,9 @@ jamminc.Instrument = function (spec) {
         }
     });
 
-    var makeDescription = function () {
+    var makeUpdaters = function () {
         description = new jamminc.Description({ inst_id: id });
+        image = new jamminc.Image({ inst_id: id });
     };
 
     this.place = function () {
@@ -423,6 +557,7 @@ jamminc.Instrument = function (spec) {
             .empty()
             .append(nameInput,
                     description ? description.showButton : '',
+                    image ? image.showButton : '',
                     document.createElement("br"),
                     graph.getElement());
         graph.update();
@@ -442,7 +577,7 @@ jamminc.Instrument = function (spec) {
                 } else {
                     local = false;
                     id = data.id;
-                    makeDescription();
+                    makeUpdaters();
                     that.place();
                     mw.flash("New instrument created");
                 }
@@ -531,7 +666,7 @@ jamminc.Instrument = function (spec) {
 
         if (id) {
             that.load();
-            makeDescription();
+            makeUpdaters();
         } else {
             local = true;
             ready = true;
@@ -727,9 +862,10 @@ jamminc.Song = function (spec) {
         name: $("#song-name").get(0)
     });
 
-    var makeDescription = function () {
+    var makeUpdaters = function () {
         description = new jamminc.Description({ song_id: id });
-        $("#song-name").after(description.showButton);
+        image = new jamminc.Image({ song_id: id });
+        $("#song-name").after(description.showButton, image.showButton);
     };
 
     this.generateAudio = function (handler) {
@@ -798,7 +934,7 @@ jamminc.Song = function (spec) {
                 } else {
                     local = false;
                     id = data.id;
-                    makeDescription();
+                    makeUpdaters();
                     mw.flash("New song created");
                     that.save();
                 }
@@ -873,7 +1009,7 @@ jamminc.Song = function (spec) {
 
         if (spec.id) {
             that.load();
-            makeDescription();
+            makeUpdaters();
         } else {
             local = true;
         }

@@ -5,8 +5,9 @@ db.define_table(
     Field('data', 'string', length=32 * 1024),
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
-    Field('original', 'reference instruments'),
+    Field('original', 'reference instruments', ondelete='NO ACTION'),
     Field('description', 'text', length=1024),
+    Field('image', 'reference images', default=1),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
     Field('rating', 'double',
@@ -20,7 +21,7 @@ db.define_table(
     Field('data', 'string', length=32 * 1024),
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
-    Field('instrument', 'reference instruments'),
+    Field('instrument', 'reference instruments', ondelete='SET NULL'),
     Field('song', 'reference songs', required=True),
     Field('created', 'datetime', default=request.utcnow))
 
@@ -30,6 +31,7 @@ db.define_table(
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
     Field('description', 'text', length=1024),
+    Field('image', 'reference images', default=1),
     Field('upvotes', 'integer', default=0),
     Field('downvotes', 'integer', default=0),
     Field('rating', 'double',
@@ -46,6 +48,18 @@ db.define_table(
     'favorite_instruments',
     Field('instrument', 'reference instruments', required=True, notnull=True),
     Field('user', 'reference auth_user', required=True, notnull=True))
+
+db.define_table(
+    'images',
+    Field('image', 'upload',
+          uploadseparate=True,
+          required=True, notnull=True,
+          requires=IS_IMAGE(extensions=('jpeg', 'png'), maxsize=(100, 100))),
+    Field('name', 'string',
+          writable=False, readable=False),
+    Field('user', 'reference auth_user',
+          required=True, notnull=True,
+          writable=False, readable=False))
 
 db.define_table(
     'comments',
@@ -97,6 +111,17 @@ def browse_page(queries):
         if query is None:
             continue
         
+        fields = [table.id, table.name,
+                  db.auth_user.id, db.auth_user.username]
+
+        query = query & (table.author == db.auth_user.id)
+
+        if tablename in ('songs', 'instruments'):
+            query = query & (table.image == db.images.id)
+            fields.append(db.images.image)
+
+        logger.info('query {}'.format(str(query)))
+
         dbset = db(query)
         count = dbset.count()
 
@@ -115,8 +140,7 @@ def browse_page(queries):
             sort_field = 'created'
 
         entries = dbset.select(
-            table.id, table.name,
-            db.auth_user.id, db.auth_user.username,
+            *fields,
             orderby=table[sort_field], limitby=limit)
 
         browse_data['items'][tablename] = {

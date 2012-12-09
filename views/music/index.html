@@ -10,11 +10,13 @@
        browse_data['editable'] = True
        browse_data['items']['songs']['extra'] = (
            XML('<a class="button" href="{}">New song</a>'
-               .format(URL('music', 'edit', args=['song']))))
+               .format(URL('music', 'edit', args=['songs']))))
        browse_data['items']['instruments']['extra'] = (
            XML('<a class="button" href="{}">New instrument</a>'
-               .format(URL('music', 'edit', args=['instrument']))))
+               .format(URL('music', 'edit', args=['instruments']))))
     }}
+
+    <h2>Your creations</h2>
 {{end}}
 
 

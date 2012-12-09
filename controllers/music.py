@@ -42,8 +42,8 @@ def edit():
 def browse():
     return_data = {}
     items = {
-        'songs': db.songs,
-        'instruments': db.instruments
+        'songs': db.songs.id > 0,
+        'instruments': db.instruments.id > 0
         }
 
     if len(request.args) == 1:
@@ -387,11 +387,34 @@ def description():
     
     return locals()
 
-@request.restful()
 def image():
-    def PUT(image, song_id=0, inst_id=0):
-        pass
+    if not auth.user:
+        return { 'error': 'Must log in' }
 
-    return locals()
+    form = SQLFORM(
+        db.images,
+        col3={ 'image': 'A JPEG or PNG image. Must be 100x100 or less.'})
+    form.vars.user = auth.user_id
+
+    if request.vars.image is not None:
+        form.vars.name = request.vars.image.filename
+    
+    if form.process().accepted:
+        id = 0
+        if request.vars.song_id:
+            table, id = db.songs, request.vars.song_id
+        elif request.vars.inst_id:
+            table, id = db.instruments, request.vars.inst_id
+
+        if id:
+            dbset = db((table.id == id) & (table.author == auth.user_id))
+            dbset.validate_and_update(image=form.vars.id)
+
+        return {}
+    elif form.errors:
+        logger.info('image error {}'.format([e for e in form.errors]))
+        return { 'error': form.errors, 'form': form }
+    else:
+        return { 'form': form }
 
 

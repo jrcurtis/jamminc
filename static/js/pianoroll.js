@@ -397,7 +397,7 @@ pianoroll.PianoRoll = function (spec) {
         that.trackName = "track";
         that.instrument = 1;
         that.volume = 1;
-        that.pan = 0;
+        that.pan = 0.5;
         that.snapping = 0;
     };
     init();

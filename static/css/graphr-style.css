@@ -57,6 +57,7 @@
     background-image: url('/jamminc/static/images/dot.png');
     background-position: left;
     background-repeat: no-repeat;
+    margin: 1px;
 }
 
 .graph-node-outputs {
@@ -72,6 +73,7 @@
     background-image: url('/jamminc/static/images/dot.png');
     background-position: right;
     background-repeat: no-repeat;
+    margin: 1px;
 }
 
 .graph-node-dot {

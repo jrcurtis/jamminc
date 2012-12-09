@@ -10,6 +10,7 @@ progress.log
 cache
 sessions
 private
+uploads
 *.bak
 *.xcf
 
