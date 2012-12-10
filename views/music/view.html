@@ -1,4 +1,10 @@
 
+{{ response.files.extend([
+       '/jamminc/static/js/mwutil.js',
+       '/jamminc/static/js/jamminc-browse.js'
+   ])
+}}
+
 {{extend 'browse-list.html'}}
 
 {{block before_list}}

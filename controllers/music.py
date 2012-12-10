@@ -251,6 +251,11 @@ def tracks():
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
+            try:
+                inst_id = int(inst_id)
+            except:
+                inst_id = 0
+            
             result = db.tracks.validate_and_insert(
                 song=song_id, name=name, data=data, instrument=inst_id,
                 author=auth.user_id)
@@ -271,6 +276,11 @@ def tracks():
         if not auth.user:
             return_data['error'] = 'Must be logged in'
         else:
+            try:
+                inst_id = int(inst_id)
+            except:
+                inst_id = 0
+            
             track_query = ((db.tracks.id == id)
                            & (db.tracks.author == auth.user_id))
             result = db(track_query).validate_and_update(
@@ -450,4 +460,60 @@ def audio():
         return {}
     else:
         return { 'error': 'Database error' }
+
+@request.restful()
+def rate():
+    def POST(up, song_id=0, inst_id=0):
+        if not auth.user:
+            return { 'error': 'Must be logged in' }
+
+        up = bool(up)
+
+        if song_id:
+            inst_id = 0
+        elif inst_id:
+            song_id = 0
+
+        dbset = db((db.ratings.instrument == inst_id)
+                   & (db.ratings.song == song_id)
+                   & (db.ratings.user == auth.user_id))
+        if dbset.count():
+            return { 'error': "You've already rated this" }
+
+        result = db.ratings.validate_and_insert(
+            song=song_id, instrument=inst_id, up=up, user=auth.user_id)
+
+        if result.errors:
+            return { 'error': 'Database error' }
+        else:
+            return {}
+
+    return locals()
+
+@request.restful()
+def favorite():
+    def POST(song_id=0, inst_id=0):
+        if not auth.user:
+            return { 'error': 'Must be logged in' }
+
+        if song_id:
+            inst_id = 0
+        elif inst_id:
+            song_id = 0
+
+        dbset = db((db.favorites.instrument == inst_id)
+                   & (db.favorites.song == song_id)
+                   & (db.ratings.user == auth.user_id))
+        if dbset.count():
+            return { 'error': "You've already favorited this" }
+
+        result = db.favorites.validate_and_insert(
+            song=song_id, instrument=inst_id, user=auth.user_id)
+
+        if result.errors:
+            return { 'error': 'Database error' }
+        else:
+            return {}
+
+    return locals()
 

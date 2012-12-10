@@ -536,7 +536,7 @@ jamminc.Instrument = function (spec) {
                 }
 
                 $(that).triggerHandler(
-                    "save", { success: data.error === undefined });
+                    "save", { success: !data.error });
             }
         });
     };
@@ -583,7 +583,7 @@ jamminc.Instrument = function (spec) {
                 }
 
                 $(that).triggerHandler(
-                    "save", { success: data.error === undefined });
+                    "save", { success: !data.error });
             }
         });
     };
@@ -1065,9 +1065,9 @@ jamminc.InstrumentManager = function (spec) {
         if (localInstrument && (localInstrument === currentInstrument)) {
             $(localInstrument).on(
                 "save.jammincInstrumentManager",
-                function (e) {
+                function (e, data) {
                     $(localInstrument).off("save.jammincInstrumentManager");
-                    if (e.success) {
+                    if (data.success) {
                         instrumentIndex.push(
                             [localInstrument.name, localInstrument.id]);
                         instruments.insert(localInstrument);
@@ -1088,10 +1088,10 @@ jamminc.InstrumentManager = function (spec) {
         
         instrumentIndex.forEach(function (inst) {
             $load_instrument.append(
-            $(document.createElement("option"))
-            .text(inst[0])
-            .attr("value", inst[1])
-            .get(0));
+                $(document.createElement("option"))
+                    .text(inst[0])
+                    .attr("value", inst[1])
+                    .get(0));
         });
         
         var local;

@@ -48,7 +48,11 @@ pianoroll.PianoRoll = function (spec) {
             get: function () { return instruments; },
             set: function (is) {
                 instruments = is;
+                var index = instrumentSelect.selectedIndex;
+                console.log("was", index);
                 mw.fillSelect(instrumentSelect, instruments);
+                instrumentSelect.selectedIndex = index;
+                console.log("now", instrumentSelect.selectedIndex);
             }
         },
         snapping: {

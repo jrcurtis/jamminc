@@ -79,7 +79,7 @@ h3 {
     background-image: url('/jamminc/static/images/gradient.png');
     background-repeat: repeat-x;
     height: 40px;
-    line-height: 40px;
+    line-height: 39px;
     padding-right: 10px;
     margin-bottom: 10px;
 }
@@ -426,7 +426,7 @@ ul.view-options>li {
     position: absolute;
     bottom: 0.5em;
     display: none;
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: rgba(255, 255, 255, 0.8);
     border-radius: 0.5em;
     width: 100px;
 }
