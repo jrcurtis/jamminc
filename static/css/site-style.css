@@ -330,6 +330,58 @@ ul.view-options>li {
     border-right: solid 1px rgba(50, 50, 50, 0.5);
 }
 
+.icon-button {
+    border-radius: 2px;
+    border: 1px solid #444;
+    background-color: #444;
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+}
+
+.icon-button:hover {
+    background-color: #25AFC3;
+    border-color: #999;
+}
+
+.icon-button.active {
+    background-color: #DD3;
+}
+
+.icon-button.thumbs-up {
+    background-image: url('/jamminc/static/images/thumbs-up.png');
+}
+
+.icon-button.thumbs-down {
+    background-image: url('/jamminc/static/images/thumbs-down.png');
+    
+}
+
+.icon-button.favorite {
+    background-image: url('/jamminc/static/images/favorite.png');
+}
+
+.rating {
+    width: 100px;
+    height: 12px;
+    position: relative;
+    margin: 5px 0px;
+}
+
+.good, .bad {
+    position: absolute;
+    height: 100%;
+}
+
+.rating>.good {
+    background-color: #393;
+}
+
+.rating>.bad {
+    background-color: #933;
+    width: 100%;
+}
+
 .music-list {
     list-style: none;
     margin: auto;
@@ -344,6 +396,11 @@ ul.view-options>li {
     text-align: center;
 }
 
+.music-list>li .music-art {
+    position: relative;
+    margin: 3px 25px;
+}
+
 .clearfix {
     display: block;
     height: 1px;
@@ -351,21 +408,41 @@ ul.view-options>li {
 }
 
 .music-art {
-    padding: 3px 25px;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(#58696B, #131E20);
+    background-position: 0px -50px;
 }
 
-.music-list .close {
+.music-art .cell {
+    display: table-cell;
+    width: 100px;
+    height: 100px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.music-art a.extra-link {
+    position: absolute;
+    bottom: 0.5em;
+    display: none;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 0.5em;
+    width: 100px;
+}
+
+.music-art .close {
     position: absolute;
     display: none;
 }
 
-.music-art:hover .close {
+.music-art:hover .close, .music-art:hover a.extra-link {
     display: block;
 }
 
-.view-art {
-    margin: 10px;
+.view-sidebar {
     float: left;
+    padding: 3px 10px;
 }
 
 .description, .comment {

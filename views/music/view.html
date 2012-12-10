@@ -22,7 +22,19 @@
         <span>Created {{= thing.created }}</span>
       </div>
       <br/>
-      <img class="view-art" src="{{= URL('default', 'download', args=[image]) }}"/>
+
+      <div class="view-sidebar">
+        <div class="music-art"><div class="cell">
+          <img src="{{= URL('default', 'download', args=[image]) }}"/>
+        </div></div>
+        <div class="rating">
+          <div class="bad"></div>
+          <div class="good" style="width: {{= 100 * thing.rating }}%"></div>
+        </div>
+        <a class="icon-button thumbs-up" href="#">
+        </a><a class="icon-button thumbs-down" href="#">
+        </a><a class="icon-button favorite" href="#"></a>
+      </div>
 
       <div>
         <audio controls {{= XML('src="{}"'.format(URL('default', 'download', args=[audio])) if audio else '') }}></audio>
@@ -33,14 +45,17 @@
 
       <div class="description">{{= thing.description or 'No description.' }}</div>
       <div class="clearfix"></div>
+
     </div>
 
     {{ if thing_type == 'songs': }}
+        <br/>
         <h3>Components used in this song</h3>
     {{ pass }}
 {{end}}
 
 {{block after_list}}
+    <br/>
     <h3>Comments</h3>
     <ol class="comments">
     {{ for row in comments: }}

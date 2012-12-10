@@ -160,8 +160,8 @@ jamminc.nodeTypes = [
         outputs: [graphr.makeOutput("Signal", "signal")],
         evaluate: function (inputs, global) {
             return {
-                signal: inputs.signal
-                    * (inputs.max - inputs.min) / 2
+                signal: (inputs.signal + 1) / 2
+                    * (inputs.max - inputs.min)
                     + inputs.min
             };
         }

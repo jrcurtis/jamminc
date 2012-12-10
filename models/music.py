@@ -42,13 +42,16 @@ db.define_table(
     Field('created', 'datetime', default=request.utcnow))
 
 db.define_table(
-    'favorite_songs',
-    Field('song', 'reference songs', required=True, notnull=True),
+    'favorites',
+    Field('song', 'reference songs'),
+    Field('instrument', 'reference instruments'),
     Field('user', 'reference auth_user', required=True, notnull=True))
 
 db.define_table(
-    'favorite_instruments',
-    Field('instrument', 'reference instruments', required=True, notnull=True),
+    'ratings',
+    Field('song', 'reference songs'),
+    Field('instrument', 'reference instruments'),
+    Field('up', 'boolean', required=True),
     Field('user', 'reference auth_user', required=True, notnull=True))
 
 db.define_table(

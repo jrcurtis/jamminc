@@ -74,7 +74,7 @@ def view():
                & (db.instruments.image == db.images.id)
                & (db.instruments.author == db.auth_user.id))
             .select(db.instruments.id, db.instruments.name,
-                    db.instruments.description,
+                    db.instruments.description, db.instruments.rating,
                     db.instruments.author, db.instruments.created,
                     db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username,
@@ -93,8 +93,9 @@ def view():
             db((db.songs.id == request.args[1])
                & (db.songs.image == db.images.id)
                & (db.songs.author == db.auth_user.id))
-            .select(db.songs.id, db.songs.name, db.songs.author,
-                    db.songs.description, db.songs.created,
+            .select(db.songs.id, db.songs.name,
+                    db.songs.description, db.songs.rating,
+                    db.songs.author, db.songs.created,
                     db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username,
                     left=db.audio.on(db.songs.audio == db.audio.id))
@@ -215,8 +216,8 @@ def instruments_list():
         if auth.user:
             instruments_query = db.instruments.author == auth.user_id
             favorites_query = (
-                (db.favorite_instruments.user == auth.user_id)
-                & (db.favorite_instruments.instrument == db.instruments.id))
+                (db.favorites.user == auth.user_id)
+                & (db.favorites.instrument == db.instruments.id))
         else:
             instruments_query = db.instruments.author == 1
 

@@ -28,20 +28,26 @@
         <ol class="{{= list_class }} {{= type }}">
           {{ for row in data['entries']: }}
               <li>
+                {{ default_link = URL('music', browse_data['handler'], args=[type, row[type].id]) }}
                 {{ if not is_track: }}
-                    <a href="{{= URL('music', browse_data['handler'], args=[type, row[type].id]) }}">
-                      <div class="music-art">
+                    <div class="music-art">
                       {{ if browse_data['editable']: }}
                           <div class="close">{{= row[type].id }}</div>
+                          <a class="extra-link" href="{{= URL('music', 'view', args=[type, row[type].id]) }}">View</a>
                       {{ pass }}
-
-                      <img src="{{= URL('default', 'download', args=[row.images.image]) }}"/>
+                          
+                      <a href="{{= default_link }}">
+                        <div class="cell">
+                          <img src="{{= URL('default', 'download', args=[row.images.image]) }}"/>
+                        </div>
+                      </a>
                       <br/>
-                      </div>
-
+                    </div>
+                    
+                    <a href="{{= default_link }}">
                       {{= row[type].name }}
-
                     </a>
+
                     <br/>by
                     <a href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
                       {{= row.auth_user.username }}

@@ -220,6 +220,7 @@ graphr.Graph = function (spec) {
         svgElement.setAttribute("class", "graph-svg");
         svgElement.style.width = graphSize + "px";
         svgElement.style.height = graphSize + "px";
+        $(svgElement).click(function (event) { event.preventDefault() });
         element.appendChild(svgElement);
         makeGrid();
 
