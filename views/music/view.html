@@ -12,6 +12,9 @@
        thing_type = 'songs' if song else 'instruments'
     }}
 
+    <div id="inst-id" style="display: none;">{{= instrument.id if instrument else '' }}</div>
+    <div id="song-id" style="display: none;">{{= song.id if song else ''}}</div>
+
     <div class="ui-box">
       <h2>{{= thing.name }}</h2>
       {{ if auth.user_id == author.id: }}
@@ -34,12 +37,12 @@
           <img src="{{= URL('default', 'download', args=[image]) }}"/>
         </div></div>
         <div class="rating">
-          <div class="bad"></div>
-          <div class="good" style="width: {{= 100 * thing.rating }}%"></div>
+          <div class="bad">{{= thing.downvotes }}</div>
+          <div class="good" style="width: {{= 100 * thing.upvotes / max(1, thing.upvotes + thing.downvotes) }}%">{{= thing.upvotes if thing.upvotes else '' }}</div>
         </div>
-        <a class="icon-button thumbs-up" href="#">
-        </a><a class="icon-button thumbs-down" href="#">
-        </a><a class="icon-button favorite" href="#"></a>
+        <a class="icon-button thumbs-up {{= 'active' if rating.up == True else '' }}" href="#">
+        </a><a class="icon-button thumbs-down {{= 'active' if rating.up == False else '' }}" href="#">
+        </a><a class="icon-button favorite {{= 'active' if favorite.id > 0 else '' }}" href="#"></a>
       </div>
 
       <div>
@@ -67,17 +70,21 @@
     {{ for row in comments: }}
         <li>
           <div class="sidebar">
-            <span class="username">{{= row.auth_user.username }}</span>
-            <img src="/jamminc/static/images/default-avatar.png"/>
+            <a class="username" href="{{= URL('default', 'profile', args=[row.auth_user.id]) }}">
+              {{= row.auth_user.username }}
+            </a>
+            <img src="{{= URL('default', 'download', args=[row.images.image]) }}"/>
           </div>
           <div class="comment">{{= row.comments.text }}</div>
         </li>
     {{ pass }}
     </ol>
+
     {{ if not comments: }}
         <p>No comments yet.</p>
     {{ pass }}
 
+    <br/>
     {{= comment_form }}
 {{end}}
 

@@ -60,6 +60,7 @@
 
       {{ if auth.user: }}
           <a href="{{= URL('default', 'user', args=['logout']) }}" class="login-link">Log out</a>
+          <a href="{{= URL('default', 'profile', args=[auth.user_id]) }}" class="login-link">{{= auth.user.username}}'s profile</a>
       {{ else: }}
           <a href="{{= URL('default', 'user') }}" class="login-link">Log in / sign up</a>
       {{ pass }}

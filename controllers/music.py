@@ -68,53 +68,48 @@ def view():
     if len(request.args) != 2:
         raise HTTP(404)
 
-    if request.args[0] == 'instruments':
+    type, id = request.args
+    song_id = id if type == 'songs' else 0
+    inst_id = id if type == 'instruments' else 0
+
+    if type in ('songs', 'instruments'):
+        table = db[type]
+
         row = (
-            db((db.instruments.id == request.args[1])
-               & (db.instruments.image == db.images.id)
-               & (db.instruments.author == db.auth_user.id))
-            .select(db.instruments.id, db.instruments.name,
-                    db.instruments.description, db.instruments.rating,
-                    db.instruments.author, db.instruments.created,
+            db((table.id == id)
+               & (table.image == db.images.id)
+               & (table.author == db.auth_user.id))
+            .select(table.id, table.name, table.description,
+                    table.author, table.created,
+                    table.upvotes, table.downvotes,
                     db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username,
-                    left=db.audio.on(db.instruments.audio == db.audio.id))
+                    db.ratings.up, db.favorites.id,
+                    left=[db.audio.on(table.audio == db.audio.id),
+                          db.ratings.on((db.ratings.user == auth.user_id)
+                                        & (db.ratings.instrument == inst_id)
+                                        & (db.ratings.song == song_id)),
+                          db.favorites.on((db.favorites.user == auth.user_id)
+                                          & (db.favorites.instrument == inst_id)
+                                          & (db.favorites.song == song_id))])
             .first())
 
         if not row:
             raise HTTP(404)
 
-        instrument = row.instruments
-        return_data['browse_data'] = {}
-        db.comments.instrument.default = row.instruments.id
-
-    elif request.args[0] == 'songs':
-        row = (
-            db((db.songs.id == request.args[1])
-               & (db.songs.image == db.images.id)
-               & (db.songs.author == db.auth_user.id))
-            .select(db.songs.id, db.songs.name,
-                    db.songs.description, db.songs.rating,
-                    db.songs.author, db.songs.created,
-                    db.images.image, db.audio.audio,
-                    db.auth_user.id, db.auth_user.username,
-                    left=db.audio.on(db.songs.audio == db.audio.id))
-            .first())
-
-        if not row:
-            raise HTTP(404)
-
-        song = row.songs
-
-        return_data.update(browse_page({
-                    'tracks': db.tracks.song == row.songs.id,
-                    'instruments': (
-                        (db.tracks.song == row.songs.id)
-                        & (db.tracks.instrument == db.instruments.id))
-                    }))
-
-        db.comments.song.default = row.songs.id
-
+        if type == 'instruments':
+            instrument = row.instruments
+            return_data['browse_data'] = {}
+            db.comments.instrument.default = inst_id
+        elif type == 'songs':
+            song = row.songs
+            return_data.update(browse_page({
+                        'tracks': db.tracks.song == song_id,
+                        'instruments': (
+                            (db.tracks.song == song_id)
+                            & (db.tracks.instrument == db.instruments.id))
+                        }))
+            db.comments.song.default = song_id
     else:
         raise HTTP(404)
 
@@ -124,13 +119,15 @@ def view():
     else:
         comment_form = SPAN('Log in to comment.', _class='notice')
 
-    comments_query = (((db.comments.song if song else db.comments.instrument)
-                       == (song.id if song else instrument.id))
-                      & (db.comments.author == db.auth_user.id))
+    comments_query = (
+        ((db.comments.song if song else db.comments.instrument) == id)
+        & (db.comments.author == db.auth_user.id)
+        & (db.auth_user.avatar == db.images.id))
     return_data['comments'] = (
         db(comments_query)
         .select(db.comments.text, db.comments.created,
-                db.auth_user.id, db.auth_user.username))
+                db.auth_user.id, db.auth_user.username,
+                db.images.image))
 
 
     return_data['song'] = song
@@ -138,6 +135,8 @@ def view():
     return_data['author'] = row.auth_user
     return_data['image'] = row.images.image
     return_data['audio'] = row.audio.audio
+    return_data['rating'] = row.ratings
+    return_data['favorite'] = row.favorites
     return_data['comment_form'] = comment_form
 
     return return_data
@@ -467,11 +466,13 @@ def rate():
         if not auth.user:
             return { 'error': 'Must be logged in' }
 
-        up = bool(up)
+        up = up == 'true'
 
         if song_id:
+            table, id = db.songs, song_id
             inst_id = 0
         elif inst_id:
+            table, id = db.instruments, inst_id
             song_id = 0
 
         dbset = db((db.ratings.instrument == inst_id)
@@ -480,12 +481,21 @@ def rate():
         if dbset.count():
             return { 'error': "You've already rated this" }
 
+        logger.info('about to insert {}')
         result = db.ratings.validate_and_insert(
             song=song_id, instrument=inst_id, up=up, user=auth.user_id)
 
         if result.errors:
             return { 'error': 'Database error' }
         else:
+            db.commit()
+            logger.info('about to update {} {} {}'.format(table, id, table.upvotes))
+            dbset = db(table.id == id)
+            logger.info('dbset {} {}'.format(dbset, dbset.count()))
+            amt = 1 if up else 0
+            dbset.update(
+                upvotes=table.upvotes + amt,
+                downvotes=table.downvotes + (1 - amt))
             return {}
 
     return locals()
@@ -503,7 +513,7 @@ def favorite():
 
         dbset = db((db.favorites.instrument == inst_id)
                    & (db.favorites.song == song_id)
-                   & (db.ratings.user == auth.user_id))
+                   & (db.favorites.user == auth.user_id))
         if dbset.count():
             return { 'error': "You've already favorited this" }
 

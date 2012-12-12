@@ -1,0 +1,30 @@
+
+{{extend 'browse-list.html'}}
+
+{{block before_list}}
+    <div class="ui-box">
+      <h2>{{= user.auth_user.username }}</h2>
+      {{ if user.auth_user.id == auth.user_id: }}
+          <a href="{{= URL('default', 'user', args=['profile']) }}">edit profile</a>
+      {{ pass }}
+      <br/><br/>
+
+      <div class="view-sidebar">
+        <div><div class="cell">
+          <img src="{{= URL('default', 'download', args=[user.images.image]) }}"/>
+        </div></div>
+      </div>
+
+      <div class="description">{{= user.auth_user.bio or '{} has not filled out a bio.'.format(user.auth_user.username) }}</div>
+      <div class="clearfix"></div>
+
+    </div>
+
+    <br/>
+    <h3>{{= user.auth_user.username }}'s creations</h3>
+{{end}}
+
+
+
+
+

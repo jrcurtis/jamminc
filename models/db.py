@@ -43,6 +43,9 @@ from gluon.tools import Auth, Crud, Service, PluginManager, prettydate
 auth = Auth(db)
 crud, service, plugins = Crud(db), Service(), PluginManager()
 
+auth.settings.extra_fields['auth_user'] = [
+    Field('bio', 'text'),
+    Field('avatar', 'reference images')]
 ## create all tables needed by auth if not custom tables
 auth.define_tables(username=True, signature=False)
 

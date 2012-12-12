@@ -36,6 +36,7 @@ h3 {
     margin-right: 10px;
     min-width: 200px;
     padding: 10px;
+    padding-right: 20px;
 }
 
 .notice {
@@ -43,7 +44,8 @@ h3 {
     font-size: 1em;
     margin: 0.2em;
     padding: 0.2em 1em;
-    display: inline-block;
+    position: relative;
+    top: -0.5em;
 }
 
 .flash, .notice {
@@ -104,6 +106,7 @@ h3 {
     color: #FFF;
     font-size: 0.8em;
     float: right;
+    margin-left: 1em;
 }
 
 #navigation {
@@ -174,7 +177,7 @@ h3 {
 }
 
 #navigation>li>ul>li>a:hover {
-    box-shadow: 0px 1px 2px #000;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 #navigation>li:hover {
@@ -228,6 +231,7 @@ h3 {
 }
 
 .browse-list>li>ol {
+    padding: 0px;
     margin: 0px;
     list-style-position: inside;
 }
@@ -363,21 +367,26 @@ ul.view-options>li {
 
 .rating {
     width: 100px;
-    height: 12px;
+    height: 1.3em;
     position: relative;
     margin: 5px 0px;
+    color: #FFF;
+    font-size: 0.7em;
+    line-height: 1.3em;
 }
 
-.good, .bad {
+.rating>.good, .rating>.bad {
     position: absolute;
     height: 100%;
 }
 
 .rating>.good {
+    text-align: left;
     background-color: #393;
 }
 
 .rating>.bad {
+    text-align: right;
     background-color: #933;
     width: 100%;
 }
@@ -410,6 +419,7 @@ ul.view-options>li {
 .music-art {
     width: 100px;
     height: 100px;
+    background: -webkit-radial-gradient(#58696B, #131E20);
     background: radial-gradient(#58696B, #131E20);
     background-position: 0px -50px;
 }
@@ -460,13 +470,20 @@ ul.view-options>li {
 
 .username {
     font-weight: bold;
+    color: #000;
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+.username:hover {
+    text-decoration: none;
 }
 
 .comments>li {
     border: solid 1px #6FA3AE;
     margin: 5px;
     position: relative;
-    min-height: 120px;
+    min-height: 125px;
 }
 
 .comments .sidebar {

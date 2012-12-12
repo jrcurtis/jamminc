@@ -24,7 +24,7 @@ $(function (event) {
                 inst_id: $("#inst-id").text(),
                 up: up
             },
-            succes: function (data, textStatus, jqXHR) {
+            success: function (data, textStatus, jqXHR) {
                 if (data.error) {
                     mw.flash("Couldn't rate: " + data.error);
                 } else {
@@ -43,7 +43,8 @@ $(function (event) {
             url: "/jamminc/music/favorite.json",
             type: "POST",
             data: {
-
+                song_id: $("#song-id").text(),
+                inst_id: $("#inst-id").text(),
             },
             success: function (data, textStatus, jqXHR) {
                 if (data.error) {
@@ -86,15 +87,18 @@ $(function (event) {
     $(".thumbs-up")
         .click(function () {
             rate(true);
+            return  false;
         });
 
     $(".thumbs-down")
         .click(function () {
             rate(false);
+            return false;
         });
 
     $(".favorite")
         .click(function () {
             favorite();
+            return false;
         });
 });
