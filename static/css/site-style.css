@@ -479,11 +479,19 @@ ul.view-options>li {
     text-decoration: none;
 }
 
+.comments .date {
+    position: absolute;
+    bottom: 0.1em;
+    left: 0.1em;
+    font-size: 0.7em;
+    white-space: nowrap;
+}
+
 .comments>li {
     border: solid 1px #6FA3AE;
     margin: 5px;
     position: relative;
-    min-height: 125px;
+    min-height: 150px;
 }
 
 .comments .sidebar {

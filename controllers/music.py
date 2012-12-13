@@ -20,9 +20,15 @@ def edit():
 
     elif len(request.args) == 1:
         if request.args[0] == 'songs':
-            return_data['song_id'] = 'new'
+            if request.vars.fork:
+                return_data['song_id'] = forked_song(request.vars.fork) or 'new'
+            else:
+                return_data['song_id'] = 'new'
         elif request.args[0] == 'instruments':
-            return_data['inst_id'] = 'new'
+            if request.vars.fork:
+                return_data['inst_id'] = forked_instrument(request.vars.fork) or 'new'
+            else:
+                return_data['inst_id'] = 'new'
         else:
             raise HTTP(404)
 
@@ -75,24 +81,34 @@ def view():
     if type in ('songs', 'instruments'):
         table = db[type]
 
+        query = ((table.id == id)
+                 & (table.image == db.images.id)
+                 & (table.author == db.auth_user.id))
+
+        original = table.with_alias('original')
+
+        left = [db.audio.on(table.audio == db.audio.id),
+                db.ratings.on((db.ratings.user == auth.user_id)
+                              & (db.ratings.instrument == inst_id)
+                              & (db.ratings.song == song_id)),
+                db.favorites.on((db.favorites.user == auth.user_id)
+                                & (db.favorites.instrument == inst_id)
+                                & (db.favorites.song == song_id)),
+                original.on(table.original == original.id)]
+
         row = (
-            db((table.id == id)
-               & (table.image == db.images.id)
-               & (table.author == db.auth_user.id))
+            db(query)
             .select(table.id, table.name, table.description,
                     table.author, table.created,
                     table.upvotes, table.downvotes,
                     db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username,
                     db.ratings.up, db.favorites.id,
-                    left=[db.audio.on(table.audio == db.audio.id),
-                          db.ratings.on((db.ratings.user == auth.user_id)
-                                        & (db.ratings.instrument == inst_id)
-                                        & (db.ratings.song == song_id)),
-                          db.favorites.on((db.favorites.user == auth.user_id)
-                                          & (db.favorites.instrument == inst_id)
-                                          & (db.favorites.song == song_id))])
+                    original.id, original.name,
+                    left=left)
             .first())
+
+        logger.info('row {}'.format(row))
 
         if not row:
             raise HTTP(404)
@@ -132,6 +148,9 @@ def view():
 
     return_data['song'] = song
     return_data['instrument'] = instrument
+    return_data['thing'] = song if song else instrument
+    return_data['thing_type'] = type
+    return_data['original'] = row.original
     return_data['author'] = row.auth_user
     return_data['image'] = row.images.image
     return_data['audio'] = row.audio.audio

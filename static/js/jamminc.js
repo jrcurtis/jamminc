@@ -881,6 +881,10 @@ jamminc.Song = function (spec) {
         ]);
         $(buttons).attr("class", "button-group");
         $("#song-name").after(buttons);
+
+        $("#view-song").attr("href", "/jamminc/music/view/songs/" + id);
+        $("#fork-song").attr("href", "/jamminc/music/edit/songs/" + "?fork=1");
+        $("#derived-songs").attr("href", "/jamminc/music/browse/songss?derived=" + id);
     };
 
     this.generateAudio = function (handler) {
@@ -1103,7 +1107,7 @@ jamminc.InstrumentManager = function (spec) {
             });
 
         $("#view-instrument").attr("href", "/jamminc/music/view/instruments/" + id);
-        $("#fork-instrument").attr("href", "/jamminc/music/edit/instruments/" + id + "?fork=1");
+        $("#fork-instrument").attr("href", "/jamminc/music/edit/instruments/" + "?fork=1");
         $("#derived-instruments").attr("href", "/jamminc/music/browse/instruments?derived=" + id);
         $("#instrument-uses").attr("href", "/jamminc/music/browse/songs?use=" + id);
     };

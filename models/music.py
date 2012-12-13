@@ -29,6 +29,7 @@ db.define_table(
     Field('name', 'string', length=128),
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
+    Field('original', 'reference instruments', ondelete='NO ACTION'),
     Field('description', 'text', length=1024),
     Field('image', 'reference images', default=1),
     Field('audio', 'reference audio'),
@@ -94,6 +95,35 @@ response.menu = [
      [['About Jamminc', False, URL('index')],
       ['Documentation', False, URL('index')],
       ['News', False, URL('default', 'news')]]]]
+
+def forked_song(id):
+    song = (db(db.songs.id == id)
+            .select(db.songs.id, db.songs.name)).first()
+    if not song:
+        return None
+    new_id = db.songs.insert(
+        name=song.name + ' (Fork)', author=auth.user_id, original=song.id)
+
+    tracks = (db(db.tracks.song == song.id)
+              .select(db.tracks.name, db.tracks.data, db.tracks.instrument))
+    for track in tracks:
+        db.tracks.insert(
+            name=track.name, data=track.data, author=auth.user_id,
+            instrument=track.instrument, song=new_id)
+
+    return new_id
+
+def forked_instrument(id):
+    inst = (db(db.instruments.id == id)
+            .select(db.instruments.id, db.instruments.name,
+                    db.instruments.data)).first()
+    if not inst:
+        return None
+    new_id = db.instruments.insert(
+        name=inst.name + ' (Fork)', data=inst.data, author=auth.user_id,
+        original=inst.id)
+
+    return new_id
 
 import math
 

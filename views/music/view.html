@@ -8,10 +8,6 @@
 {{extend 'browse-list.html'}}
 
 {{block before_list}}
-    {{ thing = song if song else instrument 
-       thing_type = 'songs' if song else 'instruments'
-    }}
-
     <div id="inst-id" style="display: none;">{{= instrument.id if instrument else '' }}</div>
     <div id="song-id" style="display: none;">{{= song.id if song else ''}}</div>
 
@@ -29,6 +25,17 @@
           </a></span>
         <br/>
         <span>Created {{= thing.created }}</span>
+
+        <br/>
+        <span>
+          {{ if not original.id: }}
+              <img src="/jamminc/static/images/star.png"/>This is an original {{= thing_type[:-1] }}
+          {{ else: }}
+              <img src="/jamminc/static/images/fork.png"/>This {{= thing_type[:-1] }} is forked from
+              <a href="{{= URL('music', 'view', args=[thing_type, original.id]) }}">{{= original.name }}</a>
+          {{ pass }}
+          <a class="button" href="{{= URL('music', 'edit', args=[thing_type], vars={'fork': thing.id}) }}">Fork this {{= thing_type[:-1] }}</a>
+        </span>
       </div>
       <br/>
 
@@ -74,6 +81,7 @@
               {{= row.auth_user.username }}
             </a>
             <img src="{{= URL('default', 'download', args=[row.images.image]) }}"/>
+            <span class="date">{{= row.comments.created }}</span>
           </div>
           <div class="comment">{{= row.comments.text }}</div>
         </li>
