@@ -883,8 +883,8 @@ jamminc.Song = function (spec) {
         $("#song-name").after(buttons);
 
         $("#view-song").attr("href", "/jamminc/music/view/songs/" + id);
-        $("#fork-song").attr("href", "/jamminc/music/edit/songs/" + "?fork=1");
-        $("#derived-songs").attr("href", "/jamminc/music/browse/songss?derived=" + id);
+        $("#fork-song").attr("href", "/jamminc/music/edit/songs/" + "?fork=" + id);
+        $("#derived-songs").attr("href", "/jamminc/music/browse/songs?derived=" + id);
     };
 
     this.generateAudio = function (handler) {
@@ -1107,7 +1107,7 @@ jamminc.InstrumentManager = function (spec) {
             });
 
         $("#view-instrument").attr("href", "/jamminc/music/view/instruments/" + id);
-        $("#fork-instrument").attr("href", "/jamminc/music/edit/instruments/" + "?fork=1");
+        $("#fork-instrument").attr("href", "/jamminc/music/edit/instruments/" + "?fork=" + id);
         $("#derived-instruments").attr("href", "/jamminc/music/browse/instruments?derived=" + id);
         $("#instrument-uses").attr("href", "/jamminc/music/browse/songs?use=" + id);
     };
@@ -1156,9 +1156,11 @@ jamminc.InstrumentManager = function (spec) {
         $.ajax({
             url: "/jamminc/music/instruments_list.json",
             type: "GET",
+            data: { song_id: $("#song-id").text() },
             success: function (data, textStatus, jqXHR) {
                 instrumentIndex = data.instruments;
                 that.updateIndex();
+                $(that).triggerHandler("ready");
             }
         });
     };
@@ -1178,19 +1180,27 @@ $(function () {
     jamminc.instrumentManager = new jamminc.InstrumentManager();
     var id = 0;
 
-    if (id = $("#song-id").text()) {
-        if (id === "new") {
-            id = null;
+    $(jamminc.instrumentManager).on("ready.jamminc", function () {
+        $(jamminc.instrumentManager).off("ready.jamminc");
+
+        if (id = $("#song-id").text()) {
+            if (id === "new") {
+                id = null;
+            }
+            jamminc.song = new jamminc.Song({ id: id });
         }
-        jamminc.song = new jamminc.Song({ id: id });
-    } else if (id = $("#inst-id").text()) {
-        if (id === "new") {
-            jamminc.instrumentManager.create();
-        } else {
-            jamminc.instrumentManager.makeCurrent(id);
+
+        if (id = $("#inst-id").text()) {
+            if (id === "new") {
+                jamminc.instrumentManager.create();
+            } else {
+                jamminc.instrumentManager.makeCurrent(id);
+            }
+            jamminc.song = new jamminc.Song();
         }
-        jamminc.song = new jamminc.Song();
-    }
+        
+        jamminc.instrumentManager.updateIndex();
+    });
 
     $("#play-song").click(function (event) {
         if (jamminc.song) {

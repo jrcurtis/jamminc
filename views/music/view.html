@@ -29,12 +29,12 @@
         <br/>
         <span>
           {{ if not original.id: }}
-              <img src="/jamminc/static/images/star.png"/>This is an original {{= thing_type[:-1] }}
+              <img src="/jamminc/static/images/star.png"/>This is an original {{= thing_name }}
           {{ else: }}
-              <img src="/jamminc/static/images/fork.png"/>This {{= thing_type[:-1] }} is forked from
+              <img src="/jamminc/static/images/fork.png"/>This {{= thing_name }} is forked from
               <a href="{{= URL('music', 'view', args=[thing_type, original.id]) }}">{{= original.name }}</a>
           {{ pass }}
-          <a class="button" href="{{= URL('music', 'edit', args=[thing_type], vars={'fork': thing.id}) }}">Fork this {{= thing_type[:-1] }}</a>
+          <a class="button" href="{{= URL('music', 'edit', args=[thing_type], vars={'fork': thing.id}) }}">Fork this {{= thing_name }}</a>
         </span>
       </div>
       <br/>
@@ -47,6 +47,7 @@
           <div class="bad">{{= thing.downvotes }}</div>
           <div class="good" style="width: {{= 100 * thing.upvotes / max(1, thing.upvotes + thing.downvotes) }}%">{{= thing.upvotes if thing.upvotes else '' }}</div>
         </div>
+        <div><b>Views:</b> {{= thing.views }}</div>
         <a class="icon-button thumbs-up {{= 'active' if rating.up == True else '' }}" href="#">
         </a><a class="icon-button thumbs-down {{= 'active' if rating.up == False else '' }}" href="#">
         </a><a class="icon-button favorite {{= 'active' if favorite.id > 0 else '' }}" href="#"></a>
@@ -61,6 +62,13 @@
 
       <div class="description">{{= thing.description or 'No description.' }}</div>
       <div class="clearfix"></div>
+      
+      <ul class="button-group">
+        <li><a href="{{= URL('music', 'browse', args=[thing_type], vars={'derived': thing.id}) }}">Browse derived {{= thing_type }}</a></li>
+        {{ if thing_type == 'instruments': }}
+            <li><a href="{{= URL('music', 'browse', args=['songs'], vars={'use': thing.id}) }}">Browse songs that use this instrument</a></li>
+        {{ pass }}
+      </ul>
 
     </div>
 

@@ -22,10 +22,12 @@ def index():
     return {
         'songs': db(db.songs).select(
             db.songs.id, db.songs.name,
-            orderby=db.songs.upvotes, limitby=(0, 5)),
+            orderby=rating_order(db.songs),
+            limitby=(0, 5)),
         'instruments': db(db.instruments).select(
             db.instruments.id, db.instruments.name,
-            orderby=db.instruments.upvotes, limitby=(0, 5))
+            orderby=rating_order(db.instruments),
+            limitby=(0, 5))
         }
 
 

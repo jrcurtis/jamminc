@@ -47,19 +47,32 @@ def edit():
 
 def browse():
     return_data = {}
-    items = {
-        'songs': db.songs.id > 0,
-        'instruments': db.instruments.id > 0
-        }
+    items = {}
 
-    if len(request.args) == 1:
+    if len(request.args) == 0:
+        items['songs'] = db.songs.id > 0
+        items['instruments'] = db.instruments.id > 0
+    elif len(request.args) == 1:
         if request.args[0] == 'songs':
-            del items['instruments']
+            if request.vars.derived:
+                items['songs'] = db.songs.original == request.vars.derived
+            elif request.vars.use:
+                items['songs'] = (
+                    (db.tracks.song == db.songs.id)
+                    & (db.tracks.instrument == request.vars.use))
+            else:
+                items['songs'] = db.songs.id > 0
+
         elif request.args[0] == 'instruments':
-            del items['songs']
+            if request.vars.derived:
+                items['instruments'] = (
+                    db.instruments.original == request.vars.derived)
+            else:
+                items['instruments'] = db.instruments.id > 0
+
         else:
             raise HTTP(404)
-    elif len(request.args) > 1:
+    else:
         raise HTTP(404)
 
     return_data.update(browse_page(items))
@@ -100,7 +113,7 @@ def view():
             db(query)
             .select(table.id, table.name, table.description,
                     table.author, table.created,
-                    table.upvotes, table.downvotes,
+                    table.upvotes, table.downvotes, table.views,
                     db.images.image, db.audio.audio,
                     db.auth_user.id, db.auth_user.username,
                     db.ratings.up, db.favorites.id,
@@ -108,10 +121,10 @@ def view():
                     left=left)
             .first())
 
-        logger.info('row {}'.format(row))
-
         if not row:
             raise HTTP(404)
+
+        db(table.id == id).update(views=table.views + 1)
 
         if type == 'instruments':
             instrument = row.instruments
@@ -150,6 +163,7 @@ def view():
     return_data['instrument'] = instrument
     return_data['thing'] = song if song else instrument
     return_data['thing_type'] = type
+    return_data['thing_name'] = type[:-1]
     return_data['original'] = row.original
     return_data['author'] = row.auth_user
     return_data['image'] = row.images.image
@@ -185,9 +199,7 @@ def instruments():
                 name=name, data=data, author=auth.user_id)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on instrument create: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
                 return_data['id'] = result.id
@@ -205,9 +217,7 @@ def instruments():
             result = db(inst_query).validate_and_update(name=name, data=data)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on instrument update: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
 
@@ -230,20 +240,35 @@ def instruments():
 
 @request.restful()
 def instruments_list():
-    def GET():
-        if auth.user:
-            instruments_query = db.instruments.author == auth.user_id
-            favorites_query = (
-                (db.favorites.user == auth.user_id)
-                & (db.favorites.instrument == db.instruments.id))
-        else:
-            instruments_query = db.instruments.author == 1
+    def GET(song_id=0):
+        queries = []
 
-        instruments = db(instruments_query).select(
-            db.instruments.id, db.instruments.name).as_list()
+        if auth.user:
+            queries.extend([
+                    # The current user's instruments
+                    db.instruments.author == auth.user_id,
+                    # The current user's favorite instruments
+                    ((db.favorites.user == auth.user_id)
+                     & (db.favorites.instrument == db.instruments.id)),
+                    # The instruments already in this song (in case of forked song)
+                    ((db.tracks.song == song_id)
+                     & (db.tracks.instrument == db.instruments.id))])
+        else:
+            # Or just give them the default instruments
+            queries.append(db.instruments.author == 1)
+
+        instruments = []
+        for q in queries:
+            instruments.extend(
+                db(q)
+                .select(db.instruments.id, db.instruments.name)
+                .as_list())
+        instruments = [inst for i, inst in enumerate(instruments)
+                       if i == 0 or inst not in instruments[:i-1]]
+        instruments = map(lambda r: [r['name'], r['id']], instruments)
 
         return {
-            'instruments': map(lambda r: [r['name'], r['id']], instruments)
+            'instruments': instruments
             }
 
     return locals()
@@ -279,9 +304,7 @@ def tracks():
                 author=auth.user_id)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on track create: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
                 return_data['id'] = result.id
@@ -305,9 +328,7 @@ def tracks():
                 name=name, data=data, instrument=inst_id)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on track update: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
 
@@ -355,9 +376,7 @@ def songs():
                 name=name, author=auth.user_id)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on song create: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
                 return_data['id'] = result.id
@@ -375,9 +394,7 @@ def songs():
             result = db(song_query).validate_and_update(name=name)
 
             if result.errors:
-                return_data['error'] = 'Database error'
-                logger.info("Database error on song update: {}"
-                            .format(result.errors))
+                return_data['error'] = format_errors(result.errors)
             else:
                 db.commit()
 
@@ -477,7 +494,7 @@ def audio():
         dbset.validate_and_update(audio=result.id)
         return {}
     else:
-        return { 'error': 'Database error' }
+        return { 'error': format_errors(result.errors) }
 
 @request.restful()
 def rate():
@@ -505,7 +522,7 @@ def rate():
             song=song_id, instrument=inst_id, up=up, user=auth.user_id)
 
         if result.errors:
-            return { 'error': 'Database error' }
+            return { 'error': format_errors(result.errors) }
         else:
             db.commit()
             logger.info('about to update {} {} {}'.format(table, id, table.upvotes))
@@ -540,7 +557,7 @@ def favorite():
             song=song_id, instrument=inst_id, user=auth.user_id)
 
         if result.errors:
-            return { 'error': 'Database error' }
+            return { 'error': format_errors(result.errors) }
         else:
             return {}
 

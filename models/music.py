@@ -1,7 +1,7 @@
 
 db.define_table(
     'instruments',
-    Field('name', 'string', length=32, required=True),
+    Field('name', 'string', length=128, required=True),
     Field('data', 'string', length=32 * 1024),
     Field('author', 'reference auth_user',
           default=auth.user_id, required=True, notnull=True),
@@ -96,6 +96,15 @@ response.menu = [
       ['Documentation', False, URL('index')],
       ['News', False, URL('default', 'news')]]]]
 
+def rating_order(table):
+    return (~(table.upvotes - table.downvotes)
+             | ~table.upvotes)
+
+def format_errors(errors):
+    return '<br/>' + '<br/>'.join(
+        '<b>{}</b>: {}'.format(name, error)
+        for name, error in errors.items())
+
 def forked_song(id):
     song = (db(db.songs.id == id)
             .select(db.songs.id, db.songs.name)).first()
@@ -173,12 +182,16 @@ def browse_page(queries):
         limit = (index , index + page_length)
 
         sort_field = request.vars[tablename + '_s']
-        if sort_field not in ('upvotes', 'views'):
-            sort_field = 'created'
+        if sort_field == 'rating':
+            sort_field = rating_order(table)
+        elif sort_field == 'views':
+            sort_field = ~table.views
+        else:
+            sort_field = table.created
 
         entries = dbset.select(
             *fields,
-            orderby=table[sort_field], limitby=limit, distinct=True)
+            orderby=sort_field, limitby=limit, distinct=True)
 
         browse_data['items'][tablename] = {
             'entries': entries,
