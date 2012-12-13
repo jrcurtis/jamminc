@@ -70,8 +70,6 @@ jamminc.makeWaveform = function (name, func) {
         evaluate: function (inputs, global, local) {
             local.freqSum = local.freqSum || 0;
             local.freqSum += inputs.freq / global.sr;
-            jamminc.visualizers[0].plot(inputs.amp * func(local.freqSum - inputs.phase));
-            jamminc.visualizers[1].plot(inputs.freq);
             return {
                 signal: inputs.amp * func(local.freqSum - inputs.phase)
             };
@@ -894,15 +892,9 @@ jamminc.Song = function (spec) {
 
         var wav = new mwWAV.WAV({ channels: 2 });
         var trackI = 0;
-        jamminc.visualizers.forEach(function (v) {
-            v.reset();
-        });
 
         var gen = function () {
             if (trackI >= tracks.length) {
-                jamminc.visualizers.forEach(function (v) {
-                    v.draw();
-                });
                 handler(wav);
                 return;
             }
@@ -1029,18 +1021,6 @@ jamminc.Song = function (spec) {
         id = spec.id || 0;
         that.name = "My Song";
         tracks = [];
-
-        jamminc.visualizers = [new vis.Visualizer({ color: "#F00" }),
-                               new vis.Visualizer({ color: "#0F0" }),
-                               new vis.Visualizer({ color: "#00F" })];
-        jamminc.visualizers.forEach(function (v) {
-            $("#visualizer").append(v.element);
-        });
-        $("#toggle-visualizer")
-            .click(function () {
-                
-                return false;
-            });
 
         if (spec.id) {
             that.load();
