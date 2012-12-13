@@ -23,7 +23,15 @@ mw.capitalize = function (str) {
 };
 
 mw.sum = function (xs) {
-    return xs.reduce(function (a, b) { return a + b; });
+    return xs.reduce(function (a, b) { return a + b; }, 0);
+};
+
+mw.max = function (xs) {
+    return xs.reduce(function (a, b) { return Math.max(a, b); }, -Infinity);
+};
+
+mw.min = function (xs) {
+    return xs.reduce(function (a, b) { return Math.min(a, b); }, Infinity);
 };
 
 mw.arrayRemove = function (arr, elem) {
@@ -106,6 +114,10 @@ mw.arrayBinarySearch = function (arr, elem, key) {
 
 mw.fixCoords = function (f) {
     return function (e) {
+        // if (e.originalEvent.offsetX == null) {
+        //     e.offsetX = e.originalEvent.layerX;
+        //     e.offsetY = e.originalEvent.layerY;
+        // }
         var offset = $(e.target).offset();
         e.offsetX = e.pageX - offset.left;
         e.offsetY = e.pageY - offset.top;

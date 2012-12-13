@@ -8,7 +8,7 @@ pianoroll.noteIcons = (function () {
     for (i = music.MAX_MIDI_NOTE; i >= 0; i--) {
         name = music.noteName(i);
         if (name === "C") {
-            name += i / 12;
+            name += i / 12 - 1;
         }
         li = document.createElement("li");
         $(li)
@@ -49,10 +49,8 @@ pianoroll.PianoRoll = function (spec) {
             set: function (is) {
                 instruments = is;
                 var index = instrumentSelect.selectedIndex;
-                console.log("was", index);
                 mw.fillSelect(instrumentSelect, instruments);
                 instrumentSelect.selectedIndex = index;
-                console.log("now", instrumentSelect.selectedIndex);
             }
         },
         snapping: {

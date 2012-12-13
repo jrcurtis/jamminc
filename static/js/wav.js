@@ -141,6 +141,10 @@ mwWAV.WAV = function (spec) {
         }
     };
 
+    this.getChannelData = function (channel) {
+        return channelData[channel];
+    };
+
     this.getWav = function () {
         if (encodedWav) {
             return encodedWav;

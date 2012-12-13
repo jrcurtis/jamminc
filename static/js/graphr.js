@@ -168,6 +168,7 @@ graphr.Graph = function (spec) {
         }
 
         path.css({ stroke: "#8AF" });
+        path.element.onmousedown = function (e) { e.preventDefault(); } // prevent dragging the svg image itself
         svgElement.appendChild(path.element);
     };
 
@@ -220,7 +221,6 @@ graphr.Graph = function (spec) {
         svgElement.setAttribute("class", "graph-svg");
         svgElement.style.width = graphSize + "px";
         svgElement.style.height = graphSize + "px";
-        $(svgElement).click(function (event) { event.preventDefault() });
         element.appendChild(svgElement);
         makeGrid();
 
@@ -228,6 +228,7 @@ graphr.Graph = function (spec) {
         makeNavigationMenu();
         $(navigationMenu)
             .css({
+                width: "10em",
                 cssFloat: "left"
             });
 
@@ -556,6 +557,9 @@ graphr.GraphNode = function (spec) {
         element = document.createElement("div");
         element.setAttribute("class", "graph-node");
         element.style.position = "absolute";
+        if (graph) {
+            element.id = "graph_" + graph.getId() + "_" + id;
+        }
 
         title = document.createElement("div");
         title.setAttribute("class", "graph-node-title");

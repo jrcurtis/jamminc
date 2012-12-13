@@ -62,15 +62,18 @@ jamminc.makeWaveform = function (name, func) {
     return graphr.makeNodeType({
         name: name,
         inputs: [
-            graphr.makeInput("Frequency", "freq", 0, jamminc.TextWidget),
+            graphr.makeInput("Frequency", "freq", 1, jamminc.TextWidget),
             graphr.makeInput("Amplitude", "amp", 1, jamminc.TextWidget),
             graphr.makeInput("Phase", "phase", 0, jamminc.TextWidget)
         ],
         outputs: [graphr.makeOutput("Signal", "signal")],
-        evaluate: function (inputs, global) {
-            var omega = global.time * inputs.freq - inputs.phase;
+        evaluate: function (inputs, global, local) {
+            local.freqSum = local.freqSum || 0;
+            local.freqSum += inputs.freq / global.sr;
+            jamminc.visualizers[0].plot(inputs.amp * func(local.freqSum - inputs.phase));
+            jamminc.visualizers[1].plot(inputs.freq);
             return {
-                signal: inputs.amp * func(omega)
+                signal: inputs.amp * func(local.freqSum - inputs.phase)
             };
         }
     });
@@ -94,7 +97,7 @@ jamminc.nodeTypes = [
         outputs: [graphr.makeOutput("Signal", "signal")],
         evaluate: function (inputs, global) {
             return {
-                signal: inputs.amp * 2 * Math.random() - 1
+                signal: inputs.amp * (2 * Math.random() - 1)
             };
         }
     }),
@@ -113,7 +116,7 @@ jamminc.nodeTypes = [
                 oldY: local.oldY || [0, 0, 0, 0],
                 cutoff: inputs.cutoff,
                 resonance: inputs.res,
-                rate: global.wav.getSampleRate()
+                rate: global.sr
             });
 
             local.oldX = output.oldX;
@@ -138,6 +141,19 @@ jamminc.nodeTypes = [
         }
     }),
     graphr.makeNodeType({
+        name: "Subtract",
+        inputs: [
+            graphr.makeInput("Signal 1", "signal1", 0),
+            graphr.makeInput("Signal 2", "signal2", 0)
+        ],
+        outputs: [graphr.makeOutput("Signal", "signal")],
+        evaluate: function (inputs, global) {
+            return {
+                signal: inputs.signal1 - inputs.signal2
+            };
+        }
+    }),
+    graphr.makeNodeType({
         name: "Multiply",
         inputs: [
             graphr.makeInput("Signal 1", "signal1", 0),
@@ -151,6 +167,32 @@ jamminc.nodeTypes = [
         }
     }),
     graphr.makeNodeType({
+        name: "Divide",
+        inputs: [
+            graphr.makeInput("Signal 1", "signal1", 0),
+            graphr.makeInput("Signal 2", "signal2", 0)
+        ],
+        outputs: [graphr.makeOutput("Signal", "signal")],
+        evaluate: function (inputs, global) {
+            return {
+                signal: inputs.signal1 / inputs.signal2
+            };
+        }
+    }),
+    graphr.makeNodeType({
+        name: "Modulo",
+        inputs: [
+            graphr.makeInput("Signal 1", "signal1", 0),
+            graphr.makeInput("Signal 2", "signal2", 0)
+        ],
+        outputs: [graphr.makeOutput("Signal", "signal")],
+        evaluate: function (inputs, global) {
+            return {
+                signal: jamminc.fmod(inputs.signal1, inputs.signal2)
+            };
+        }
+    }),
+    graphr.makeNodeType({
         name: "Translate",
         inputs: [
             graphr.makeInput("Signal", "signal", 0),
@@ -158,7 +200,10 @@ jamminc.nodeTypes = [
             graphr.makeInput("Maximum", "max", 1, jamminc.TextWidget)
         ],
         outputs: [graphr.makeOutput("Signal", "signal")],
-        evaluate: function (inputs, global) {
+        evaluate: function (inputs, global, local) {
+            var signal = (inputs.signal + 1) / 2
+                * (inputs.max - inputs.min)
+                + inputs.min;
             return {
                 signal: (inputs.signal + 1) / 2
                     * (inputs.max - inputs.min)
@@ -175,7 +220,7 @@ jamminc.nodeTypes = [
             graphr.makeInput("Release", "release", 0, jamminc.TextWidget)
         ],
         outputs: [graphr.makeOutput("Signal", "signal")],
-        evaluate: function (inputs, global) {
+        evaluate: function (inputs, global, local) {
             var output, time;
             if (global.time < inputs.attack) {
                 output = global.time / inputs.attack;
@@ -205,7 +250,7 @@ jamminc.nodeTypes = [
             local.buffer[local.index] = inputs.signal;
 
             var samples = Math.floor(
-                inputs.delay * global.wav.getSampleRate());
+                inputs.delay * global.sr);
             var nextIndex = (local.index + 1) % samples;
             var output = 0;
             if (samples <= local.buffer.length) {
@@ -233,12 +278,14 @@ jamminc.nodeTypes = [
         name: "Input",
         outputs: [
             graphr.makeOutput("Note", "note"),
-            graphr.makeOutput("Feedback", "feedback")
+            graphr.makeOutput("Feedback", "feedback"),
+            graphr.makeOutput("Time", "time")
         ],
         evaluate: function (inputs, global) {
             return {
                 note: global.note,
-                feedback: global.lastSample
+                feedback: global.lastSample,
+                time: global.time
             };
         }
     }),
@@ -664,6 +711,7 @@ jamminc.Track = function (spec) {
         global.time = 0;
         global.sampleI = 0;
         global.lastSample = 0;
+        global.sr = sr;
         global.wav = wav;
 
         var noteI, sample, sampleI, i;
@@ -793,7 +841,8 @@ jamminc.Song = function (spec) {
 
     var API_URL = "/jamminc/music/songs.json";
     var id, local;
-    var tracks, instruments, description, image, audioUpload;
+    var tracks, instruments;
+    var description, image, audioUpload;
 
     Object.defineProperties(this, {
         id: {
@@ -845,9 +894,15 @@ jamminc.Song = function (spec) {
 
         var wav = new mwWAV.WAV({ channels: 2 });
         var trackI = 0;
+        jamminc.visualizers.forEach(function (v) {
+            v.reset();
+        });
 
         var gen = function () {
             if (trackI >= tracks.length) {
+                jamminc.visualizers.forEach(function (v) {
+                    v.draw();
+                });
                 handler(wav);
                 return;
             }
@@ -974,6 +1029,18 @@ jamminc.Song = function (spec) {
         id = spec.id || 0;
         that.name = "My Song";
         tracks = [];
+
+        jamminc.visualizers = [new vis.Visualizer({ color: "#F00" }),
+                               new vis.Visualizer({ color: "#0F0" }),
+                               new vis.Visualizer({ color: "#00F" })];
+        jamminc.visualizers.forEach(function (v) {
+            $("#visualizer").append(v.element);
+        });
+        $("#toggle-visualizer")
+            .click(function () {
+                
+                return false;
+            });
 
         if (spec.id) {
             that.load();
