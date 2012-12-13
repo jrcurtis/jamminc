@@ -45,7 +45,7 @@ crud, service, plugins = Crud(db), Service(), PluginManager()
 
 auth.settings.extra_fields['auth_user'] = [
     Field('bio', 'text'),
-    Field('avatar', 'reference images')]
+    Field('avatar', 'reference images', default=2)]
 ## create all tables needed by auth if not custom tables
 auth.define_tables(username=True, signature=False)
 

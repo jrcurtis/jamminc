@@ -298,7 +298,7 @@ jamminc.nodeTypes = [
     })
 ];
 
-jamminc.defaultInstrument = '{"nodes":{"id_1":{"offset":{"top":1481,"left":2895},"type":"Output","inputs":{"output":{"object":"id_5","output":"signal"}},"outputs":{}},"id_5":{"offset":{"top":1476.5,"left":2695},"type":"Sine","inputs":{"freq":{"object":"id_7","output":"note"},"amp":{"object":"id_9","output":"num"}},"outputs":{"signal":[{"object":"id_1","input":"output"}]}},"id_7":{"offset":{"top":1433.5,"left":2532},"type":"Input","inputs":{},"outputs":{"note":[{"object":"id_5","input":"freq"}]}},"id_9":{"offset":{"top":1504.5,"left":2491},"type":"Number","inputs":{},"outputs":{"num":[{"object":"id_5","input":"amp"}]},"widget":0.2}}}';
+jamminc.defaultInstrument = '{"nodes":{"id_1":{"offset":{"top":1472,"left":1689},"type":"Output","inputs":{"output":{"object":"id_5","output":"signal"}},"outputs":{}},"id_5":{"offset":{"top":1461.5,"left":1488},"type":"Sine","inputs":{"freq":{"object":"id_7","output":"note"},"amp":{"object":"id_9","output":"num"}},"outputs":{"signal":[{"object":"id_1","input":"output"}]}},"id_7":{"offset":{"top":1399.5,"left":1341},"type":"Input","inputs":{},"outputs":{"note":[{"object":"id_5","input":"freq"}]}},"id_9":{"offset":{"top":1506.5,"left":1292},"type":"Number","inputs":{},"outputs":{"num":[{"object":"id_5","input":"amp"}]},"widget":0.2}}}';
 
 // spec.inst_id = instrument id to describe
 // spec.song_id = song id to describe
@@ -1160,6 +1160,9 @@ jamminc.InstrumentManager = function (spec) {
             success: function (data, textStatus, jqXHR) {
                 instrumentIndex = data.instruments;
                 that.updateIndex();
+                $(that).triggerHandler("ready");
+            },
+            error: function () {
                 $(that).triggerHandler("ready");
             }
         });

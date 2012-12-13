@@ -243,6 +243,11 @@ def instruments_list():
     def GET(song_id=0):
         queries = []
 
+        try:
+            song_id = int(song_id)
+        except ValueError:
+            song_id = 0
+
         if auth.user:
             queries.extend([
                     # The current user's instruments
